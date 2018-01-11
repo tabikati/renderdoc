@@ -1396,6 +1396,71 @@ rdcarray<WindowingSystem> ReplayController::GetSupportedWindowSystems()
   return m_pDevice->GetSupportedWindowSystems();
 }
 
+// temporary hack
+#pragma comment(lib, "3rdparty/RGP/RGP_API.lib")
+#include "3rdparty/RGP/RGP_API.h"
+
+RGP_API *rgpAPI = NULL;
+
+rdcstr ReplayController::CreateRGPProfile(WindowingData window)
+{
+  if(!rgpAPI)
+    return "";
+
+  std::string path = FileIO::GetTempFolderFilename() + "/renderdoc_rgp_capture.rgp";
+
+  ReplayOutput *output = CreateOutput(window, ReplayOutputType::Texture);
+
+  TextureDisplay d = {};
+  output->SetTextureDisplay(d);
+
+  // prime the pump
+  for(int i = 0; i < 5; i++)
+  {
+    m_pDevice->ReplayLog(10000000, eReplay_Full);
+    output->Display();
+  }
+
+  rgpAPI->TriggerCapture(path.c_str());
+
+  // delay a while to make sure the profiling is ready to go
+  Threading::Sleep(5000);
+
+  // replay for capture. We do this a few times since doing it only once doesn't seem to pick up
+  // (6-7 runs needed)
+  for(int i = 0; i < 10; i++)
+  {
+    if(rgpAPI->IsProfileCaptured())
+    {
+      RDCDEBUG("Got profile after %d runs", i);
+      break;
+    }
+
+    output->Display();
+    m_pDevice->ReplayLog(10000000, eReplay_Full);
+  }
+
+  output->Display();
+
+  // restore back to where we were
+  m_pDevice->ReplayLog(m_EventID, eReplay_Full);
+
+  ShutdownOutput(output);
+
+  // wait for 5 seconds for the capture to become ready
+  for(int i = 0; i < 50; i++)
+  {
+    if(rgpAPI->IsProfileCaptured())
+      return path;
+
+    Threading::Sleep(100);
+  }
+
+  RDCERR("Didn't get capture after 5 seconds");
+
+  return "";
+}
+
 void ReplayController::ReplayLoop(WindowingData window, ResourceId texid)
 {
   ReplayOutput *output = CreateOutput(window, ReplayOutputType::Texture);

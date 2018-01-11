@@ -97,6 +97,9 @@
     <Filter Include="3rdparty\pugixml">
       <UniqueIdentifier>{50c142cb-d8b9-44f7-a68a-ab9015975ea5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="3rdparty\RGP">
+      <UniqueIdentifier>{9fc09f3b-458f-4a4f-89e2-16a58ebd86db}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Common\Serialise\Compressors">
       <UniqueIdentifier>{3cb4fd0e-7cd9-45a3-99d2-1158f27ec438}</UniqueIdentifier>
     </Filter>
@@ -359,6 +362,9 @@
     </ClInclude>
     <ClInclude Include="3rdparty\pugixml\pugixml.hpp">
       <Filter>3rdparty\pugixml</Filter>
+    </ClInclude>
+    <ClInclude Include="3rdparty\RGP\RGP_API.h">
+      <Filter>3rdparty\RGP</Filter>
     </ClInclude>
     <ClInclude Include="strings\string_utils.h">
       <Filter>Common\Strings</Filter>

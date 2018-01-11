@@ -122,6 +122,7 @@
     <ClInclude Include="3rdparty\plthook\plthook.h" />
     <ClInclude Include="3rdparty\pugixml\pugiconfig.hpp" />
     <ClInclude Include="3rdparty\pugixml\pugixml.hpp" />
+    <ClInclude Include="3rdparty\RGP\RGP_API.h" />
     <ClInclude Include="3rdparty\stb\stb_image.h" />
     <ClInclude Include="3rdparty\stb\stb_image_resize.h" />
     <ClInclude Include="3rdparty\stb\stb_image_write.h" />

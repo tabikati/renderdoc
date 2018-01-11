@@ -51,6 +51,7 @@
     </property>
     <addaction name="action_Resolve_Symbols"/>
     <addaction name="action_Recompress_Capture"/>
+    <addaction name="action_Create_RGP_Profile"/>
     <addaction name="action_Start_Replay_Loop"/>
     <addaction name="separator"/>
     <addaction name="action_Settings"/>
@@ -451,6 +452,11 @@
   <action name="action_Check_for_Updates">
    <property name="text">
     <string>Check for updates</string>
+   </property>
+  </action>
+  <action name="action_Create_RGP_Profile">
+   <property name="text">
+    <string>Create RGP Profile</string>
    </property>
   </action>
  </widget>

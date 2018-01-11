@@ -286,6 +286,7 @@ MainWindow::MainWindow(ICaptureContext &ctx) : QMainWindow(NULL), ui(new Ui::Mai
   });
 
   ui->action_Start_Replay_Loop->setEnabled(false);
+  ui->action_Create_RGP_Profile->setEnabled(false);
   ui->action_Resolve_Symbols->setEnabled(false);
   ui->action_Resolve_Symbols->setText(tr("Resolve Symbols"));
 
@@ -1817,6 +1818,7 @@ void MainWindow::OnCaptureLoaded()
   ui->action_Recompress_Capture->setEnabled(true);
 
   ui->action_Start_Replay_Loop->setEnabled(true);
+  ui->action_Create_RGP_Profile->setEnabled(true);
 
   setCaptureHasErrors(!m_Ctx.DebugMessages().empty());
 
@@ -1847,6 +1849,7 @@ void MainWindow::OnCaptureClosed()
   ui->menu_Export_As->setEnabled(false);
 
   ui->action_Start_Replay_Loop->setEnabled(false);
+  ui->action_Create_RGP_Profile->setEnabled(false);
 
   contextChooser->setEnabled(true);
 
@@ -2244,6 +2247,36 @@ void MainWindow::on_action_Start_Replay_Loop_triggered()
   RDDialog::show(&popup);
 
   m_Ctx.Replay().CancelReplayLoop();
+}
+
+void MainWindow::on_action_Create_RGP_Profile_triggered()
+{
+  if(!m_Ctx.IsCaptureLoaded())
+    return;
+
+  QDialog popup;
+  popup.setWindowFlags(popup.windowFlags() & ~Qt::WindowContextHelpButtonHint);
+  popup.setWindowIcon(windowIcon());
+  popup.resize(128, 16);
+  popup.setWindowTitle(tr("Making RGP Profile from %1").arg(m_Ctx.GetCaptureFilename()));
+
+  WindowingData winData = m_Ctx.CreateWindowingData(popup.winId());
+
+  rdcstr path;
+
+  m_Ctx.Replay().AsyncInvoke([winData, &popup, &path](IReplayController *r) {
+    path = r->CreateRGPProfile(winData);
+    GUIInvoke::call([&popup]() { popup.close(); });
+  });
+
+  RDDialog::show(&popup);
+
+  qInfo() << "RGP Capture created at" << QString(path);
+
+  QString RGPPath = lit("D:/RGP/RadeonGPUProfiler.exe");
+
+  if(QFileInfo(RGPPath).exists() && !path.isEmpty())
+    QProcess::execute(RGPPath, QStringList() << QString(path));
 }
 
 void MainWindow::on_action_Attach_to_Running_Instance_triggered()
