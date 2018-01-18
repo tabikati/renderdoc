@@ -1400,6 +1400,32 @@ rdcarray<WindowingSystem> ReplayController::GetSupportedWindowSystems()
 #pragma comment(lib, "3rdparty/RGP/RGP_API.lib")
 #include "3rdparty/RGP/RGP_API.h"
 
+#if DISABLED(RDOC_WIN32)
+
+// define a tiny stub, so other platforms without the lib will compile.
+RGP_API::RGP_API()
+{
+}
+RGP_API::~RGP_API()
+{
+}
+bool RGP_API::Init()
+{
+  return false;
+}
+void RGP_API::Finish()
+{
+}
+bool RGP_API::TriggerCapture(const char *captureFileName)
+{
+  return false;
+}
+bool RGP_API::IsProfileCaptured()
+{
+  return false;
+}
+#endif
+
 RGP_API *rgpAPI = NULL;
 
 rdcstr ReplayController::CreateRGPProfile(WindowingData window)
