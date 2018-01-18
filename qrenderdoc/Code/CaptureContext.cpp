@@ -52,6 +52,7 @@
 #include "Windows/TextureViewer.h"
 #include "Windows/TimelineBar.h"
 #include "QRDUtils.h"
+#include "RGPInterop.h"
 
 CaptureContext::CaptureContext(QString paramFilename, QString remoteHost, uint32_t remoteIdent,
                                bool temp, PersistantConfig &cfg)
@@ -829,8 +830,8 @@ void CaptureContext::CloseCapture()
   if(!m_CaptureLoaded)
     return;
 
-  m_RGP2Event.clear();
-  m_Event2RGP.clear();
+  delete m_RGP;
+  m_RGP = NULL;
 
   m_Config.CrashReport_LastOpenedCapture = QString();
 
@@ -1259,9 +1260,6 @@ void CaptureContext::LoadNotes(const QString &data)
 
 void CaptureContext::CreateRGPMapping(uint32_t version)
 {
-  m_RGP2Event.clear();
-  m_Event2RGP.clear();
-
   if(!m_CaptureLoaded)
     return;
 
@@ -1271,88 +1269,35 @@ void CaptureContext::CreateRGPMapping(uint32_t version)
     return;
   }
 
-  if(version != 0)
+  if(m_RGP)
+    delete m_RGP;
+
+  m_RGP = new RGPInterop(version, *this);
+
+  if(!m_RGP->Valid())
   {
-    qCritical() << "Unsupported version" << version;
-    return;
+    delete m_RGP;
+    m_RGP = NULL;
   }
-
-  QStringList eventNames;
-
-  if(m_APIProps.pipelineType == GraphicsAPI::Vulkan)
-  {
-    eventNames << lit("vkCmdDispatch") << lit("vkCmdDispatchIndirect") << lit("vkCmdDraw")
-               << lit("vkCmdDrawIndexed") << lit("vkCmdDrawIndirect")
-               << lit("vkCmdDrawIndexedIndirect") << lit("vkCmdClearColorImage")
-               << lit("vkCmdClearDepthStencilImage") << lit("vkCmdClearAttachments")
-               << lit("vkCmdPipelineBarrier") << lit("vkCmdCopyBuffer") << lit("vkCmdCopyImage")
-               << lit("vkCmdBlitImage") << lit("vkCmdCopyBufferToImage")
-               << lit("vkCmdCopyImageToBuffer") << lit("vkCmdUpdateBuffer")
-               << lit("vkCmdFillBuffer") << lit("vkCmdResolveImage") << lit("vkCmdResetQueryPool")
-               << lit("vkCmdCopyQueryPoolResults") << lit("vkCmdWaitEvents");
-  }
-  else if(m_APIProps.pipelineType == GraphicsAPI::D3D12)
-  {
-    // these names must match those in DoStringise(const D3D12Chunk &el) for the chunks
-    eventNames << lit("ID3D12GraphicsCommandList::Dispatch")
-               << lit("ID3D12GraphicsCommandList::DrawInstanced")
-               << lit("ID3D12GraphicsCommandList::DrawIndexedInstanced")
-               << lit("ID3D12GraphicsCommandList::ClearDepthStencilView")
-               << lit("ID3D12GraphicsCommandList::ClearRenderTargetView")
-               << lit("ID3D12GraphicsCommandList::ClearUnorderedAccessViewFloat")
-               << lit("ID3D12GraphicsCommandList::ClearUnorderedAccessViewUint")
-               << lit("ID3D12GraphicsCommandList::ResourceBarrier")
-               << lit("ID3D12GraphicsCommandList::CopyTextureRegion")
-               << lit("ID3D12GraphicsCommandList::CopyBufferRegion")
-               << lit("ID3D12GraphicsCommandList::CopyResource")
-               << lit("ID3D12GraphicsCommandList::CopyTiles")
-               << lit("ID3D12GraphicsCommandList::ResolveSubresource")
-               << lit("ID3D12GraphicsCommandList::ResolveSubresourceRegion")
-               << lit("ID3D12GraphicsCommandList::DiscardResource")
-               << lit("ID3D12GraphicsCommandList::ResolveQueryData")
-               << lit("ID3D12GraphicsCommandList::ExecuteIndirect")
-               << lit("ID3D12GraphicsCommandList::ExecuteBundle");
-  }
-
-  // if we don't have any event names, this API doesn't have a mapping.
-  if(eventNames.isEmpty())
-    return;
-
-  m_Event2RGP.resize(m_LastDrawcall->eventId + 1);
-
-  // linearId 0 is invalid, so map to eventId 0.
-  // the first real event will be linearId 1
-  m_RGP2Event.push_back(0);
-
-  // iterate over all draws depth-first, to enumerate events
-  CreateRGPMapping(eventNames, m_Drawcalls);
 }
 
-void CaptureContext::CreateRGPMapping(const QStringList &eventNames,
-                                      const rdcarray<DrawcallDescription> &drawcalls)
+bool CaptureContext::SelectRGPEvent(uint32_t eventId)
 {
-  const SDFile &file = *m_StructuredFile;
-
-  for(const DrawcallDescription &draw : drawcalls)
+  if(m_RGP)
   {
-    for(const APIEvent &ev : draw.events)
-    {
-      if(ev.chunkIndex == 0 || ev.chunkIndex >= file.chunks.size())
-        continue;
-
-      const SDChunk *chunk = file.chunks[ev.chunkIndex];
-
-      if(eventNames.contains(chunk->name, Qt::CaseSensitive))
-      {
-        m_Event2RGP[ev.eventId] = (uint32_t)m_RGP2Event.size();
-        m_RGP2Event.push_back(ev.eventId);
-      }
-    }
-
-    // if we have children, step into them first before going to our next sibling
-    if(!draw.children.empty())
-      CreateRGPMapping(eventNames, draw.children);
+    m_RGP->SelectEvent(eventId);
+    return true;
   }
+  return false;
+}
+
+bool CaptureContext::HackProcessRGPInput(rdcstr input)
+{
+  if(m_RGP)
+  {
+    return m_RGP->HackProcessInput(input);
+  }
+  return false;
 }
 
 rdcstr CaptureContext::GetResourceName(ResourceId id)

@@ -82,6 +82,7 @@ private slots:
   void on_stepPrev_clicked();
   void on_exportDraws_clicked();
   void on_colSelect_clicked();
+  void on_rgpHack_clicked();
 
   // manual slots
   void findHighlight_timeout();

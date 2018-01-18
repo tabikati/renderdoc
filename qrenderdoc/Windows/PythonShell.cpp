@@ -103,13 +103,10 @@ struct CaptureContextInvoker : ICaptureContext
   {
     return m_Ctx.CreateRGPMapping(version);
   }
-  virtual uint32_t GetRGPIdFromEventId(uint32_t eventId) override
+  virtual bool SelectRGPEvent(uint32_t eventId) override { return m_Ctx.SelectRGPEvent(eventId); }
+  virtual bool HackProcessRGPInput(rdcstr input) override
   {
-    return m_Ctx.GetRGPIdFromEventId(eventId);
-  }
-  virtual uint32_t GetEventIdFromRGPId(uint32_t RGPId) override
-  {
-    return m_Ctx.GetEventIdFromRGPId(RGPId);
+    return m_Ctx.HackProcessRGPInput(input);
   }
   virtual const SDFile &GetStructuredFile() override { return m_Ctx.GetStructuredFile(); }
   virtual WindowingSystem CurWindowingSystem() override { return m_Ctx.CurWindowingSystem(); }

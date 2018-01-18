@@ -24,6 +24,7 @@
 
 #include "EventBrowser.h"
 #include <QAbstractSpinBox>
+#include <QClipboard>
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QKeyEvent>
@@ -254,6 +255,9 @@ void EventBrowser::OnCaptureLoaded()
   ui->stepNext->setEnabled(true);
 
   m_Ctx.SetEventID({this}, lastEIDDraw.first, lastEIDDraw.first);
+
+  // hack - this should be done when an IPC connection is made
+  m_Ctx.CreateRGPMapping(1);
 }
 
 void EventBrowser::OnCaptureClosed()
@@ -725,6 +729,11 @@ void EventBrowser::on_colSelect_clicked()
   }
 }
 
+void EventBrowser::on_rgpHack_clicked()
+{
+  m_Ctx.HackProcessRGPInput(QApplication::clipboard()->text());
+}
+
 QString EventBrowser::GetExportDrawcallString(int indent, bool firstchild,
                                               const DrawcallDescription &drawcall)
 {
@@ -927,14 +936,17 @@ void EventBrowser::events_contextMenu(const QPoint &pos)
   QAction expandAll(tr("&Expand All"), this);
   QAction collapseAll(tr("&Collapse All"), this);
   QAction selectCols(tr("&Select Columns..."), this);
+  QAction rgpSelect(tr("Select &RGP Event"), this);
 
   contextMenu.addAction(&expandAll);
   contextMenu.addAction(&collapseAll);
   contextMenu.addAction(&selectCols);
+  contextMenu.addAction(&rgpSelect);
 
   expandAll.setIcon(Icons::arrow_out());
   collapseAll.setIcon(Icons::arrow_in());
   selectCols.setIcon(Icons::timeline_marker());
+  rgpSelect.setIcon(Icons::connect());
 
   expandAll.setEnabled(item && item->childCount() > 0);
   collapseAll.setEnabled(item && item->childCount() > 0);
@@ -946,6 +958,9 @@ void EventBrowser::events_contextMenu(const QPoint &pos)
                    [this, item]() { ui->events->collapseAllItems(item); });
 
   QObject::connect(&selectCols, &QAction::triggered, this, &EventBrowser::on_colSelect_clicked);
+
+  QObject::connect(&rgpSelect, &QAction::triggered,
+                   [this]() { m_Ctx.SelectRGPEvent(m_Ctx.CurEvent()); });
 
   RDDialog::show(&contextMenu, ui->events->viewport()->mapToGlobal(pos));
 }

@@ -1326,22 +1326,17 @@ Does nothing if no capture is loaded.
 )");
   virtual void CreateRGPMapping(uint32_t version) = 0;
 
-  DOCUMENT(R"(Get the RGP linearId from an :data:`eventId <renderdoc.APIEvent.eventId>`.
+  DOCUMENT(R"(Select the given :data:`eventId <renderdoc.APIEvent.eventId>` equivalent in RGP.
 
 :param int eventId: The :data:`eventId <renderdoc.APIEvent.eventId>` to query for.
-:return: The linearId, or ``0`` if no linearId corresponds to this event.
-:rtype: int
+:return: ``True`` if the selection request succeeded. This only confirms the request was sent, not
+  that the event was selected in RGP.
+:rtype: bool
 )");
-  virtual uint32_t GetRGPIdFromEventId(uint32_t eventId) = 0;
+  virtual bool SelectRGPEvent(uint32_t eventId) = 0;
 
-  DOCUMENT(R"(Get the :data:`eventId <renderdoc.APIEvent.eventId>` from an RGP linearId.
-
-:param int RGPId: The RGP linearId to query for.
-:return: The :data:`eventId <renderdoc.APIEvent.eventId>`, or ``0`` if no eventId can be found
-  corresponding to this linearId.
-:rtype: int
-)");
-  virtual uint32_t GetEventIdFromRGPId(uint32_t RGPId) = 0;
+  DOCUMENT("");
+  virtual bool HackProcessRGPInput(rdcstr input) = 0;
 
   DOCUMENT(R"(Retrieve the :class:`~renderdoc.SDFile` for the currently open capture.
 
