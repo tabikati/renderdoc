@@ -77,7 +77,7 @@ void RGPInterop::SelectEvent(uint32_t eventId)
 {
   RGPInteropEvent ev = m_Event2RGP[eventId];
 
-  if(ev.rgplinearid == 0)
+  if(ev.interoplinearid == 0)
     return;
 
   QString encoded = EncodeCommand(RGPCommand::SetEvent, ev.toParams(m_Version));
@@ -88,11 +88,11 @@ void RGPInterop::SelectEvent(uint32_t eventId)
 
 void RGPInterop::EventSelected(RGPInteropEvent event)
 {
-  uint32_t eventId = m_RGP2Event[event.rgplinearid];
+  uint32_t eventId = m_RGP2Event[event.interoplinearid];
 
   if(eventId == 0)
   {
-    qWarning() << "RGP Event " << event.rgplinearid << event.cmdbufid << event.eventname
+    qWarning() << "RGP Event " << event.interoplinearid << event.cmdbufid << event.eventname
                << " did not correspond to a known eventId";
     return;
   }
@@ -121,7 +121,7 @@ void RGPInterop::CreateMapping(const rdcarray<DrawcallDescription> &drawcalls)
 
       if(m_EventNames.contains(chunk->name, Qt::CaseSensitive))
       {
-        m_Event2RGP[ev.eventId].rgplinearid = (uint32_t)m_RGP2Event.size();
+        m_Event2RGP[ev.eventId].interoplinearid = (uint32_t)m_RGP2Event.size();
         if(ev.eventId == draw.eventId)
           m_Event2RGP[ev.eventId].eventname = draw.name;
         else

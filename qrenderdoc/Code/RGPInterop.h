@@ -47,13 +47,13 @@ enum class RGPCommand
 
 struct RGPInteropEvent
 {
-  uint32_t rgplinearid = 0;
+  uint32_t interoplinearid = 0;
   uint32_t cmdbufid = 0;
   QString eventname;
 
   QVariantList toParams(uint32_t version) const
   {
-    return {VARIANT_ENCODE(rgplinearid), VARIANT_ENCODE(cmdbufid), VARIANT_ENCODE(eventname)};
+    return {VARIANT_ENCODE(interoplinearid), VARIANT_ENCODE(cmdbufid), VARIANT_ENCODE(eventname)};
   }
 
   void fromParams(uint32_t version, QVariantList list)
@@ -62,7 +62,7 @@ struct RGPInteropEvent
     {
       QString paramName = list[i].toString();
       QVariant paramValue = list[i + 1];
-      VARIANT_DECODE(rgplinearid);
+      VARIANT_DECODE(interoplinearid);
       VARIANT_DECODE(cmdbufid);
       VARIANT_DECODE(eventname);
 
