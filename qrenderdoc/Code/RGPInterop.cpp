@@ -71,6 +71,8 @@ RGPInterop::RGPInterop(uint32_t version, ICaptureContext &ctx) : m_Ctx(ctx)
   m_RGP2Event.push_back(0);
 
   CreateMapping(ctx.CurDrawcalls());
+
+  DumpMapping();
 }
 
 void RGPInterop::SelectEvent(uint32_t eventId)
@@ -218,4 +220,41 @@ bool RGPInterop::DecodeCommand(QString command)
   }
 
   return false;
+}
+
+void RGPInterop::DumpMapping()
+{
+  QDir dumpDir(lit("C:/temp"));
+
+  if(dumpDir.exists() == true)
+  {
+    const QString captureFileName = m_Ctx.GetCaptureFilename();
+    const int32_t slashLoc = captureFileName.lastIndexOf(rdcstr("/"));
+    const int32_t extLoc = captureFileName.lastIndexOf(rdcstr("."));
+    const QString traceName = captureFileName.mid(slashLoc + 1, extLoc - slashLoc - 1);
+    const QString dumpName = dumpDir.absoluteFilePath(lit("rdc_mapping_%1.txt").arg(traceName));
+
+    QFile file(dumpName);
+
+    if(file.open(QIODevice::ReadWrite | QIODevice::Truncate | QIODevice::Text))
+    {
+      QTextStream stream(&file);
+      stream.setFieldAlignment(QTextStream::AlignLeft);
+
+      stream << qSetFieldWidth(18) << "linearId"
+             << "rdcId"
+             << "Call" << qSetFieldWidth(1) << endl;
+
+      for(const RGPInteropEvent &ev : m_Event2RGP)
+      {
+        if(ev.interoplinearid > 0)
+        {
+          stream << qSetFieldWidth(18) << ev.interoplinearid << m_RGP2Event[ev.interoplinearid]
+                 << ev.eventname << qSetFieldWidth(1) << endl;
+        }
+      }
+
+      file.close();
+    }
+  }
 }

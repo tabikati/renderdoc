@@ -92,4 +92,5 @@ private:
   rdcarray<uint32_t> m_RGP2Event;
   QString EncodeCommand(RGPCommand command, QVariantList params);
   bool DecodeCommand(QString command);
+  void DumpMapping();
 };
