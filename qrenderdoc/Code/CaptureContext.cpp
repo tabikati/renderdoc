@@ -1258,46 +1258,53 @@ void CaptureContext::LoadNotes(const QString &data)
   }
 }
 
-void CaptureContext::CreateRGPMapping(uint32_t version)
+bool CaptureContext::OpenRGPProfile(const rdcstr &filename)
 {
+  delete m_RGP;
+  m_RGP = NULL;
+
   if(!m_CaptureLoaded)
-    return;
+  {
+    RDDialog::critical(m_MainWindow, tr("Error opening RGP"),
+                       tr("Can't open RGP profile with no capture open"));
+    return false;
+  }
 
   if(!m_StructuredFile)
   {
-    qCritical() << "Capture not loaded correctly - no structured data";
-    return;
+    RDDialog::critical(m_MainWindow, tr("Error opening RGP"),
+                       tr("Open capture has no structured data - can't initialise RGP interop."));
+    return false;
   }
 
-  if(m_RGP)
-    delete m_RGP;
-
-  m_RGP = new RGPInterop(version, *this);
-
-  if(!m_RGP->Valid())
+  if(filename.isEmpty() || !QFileInfo(filename).exists())
   {
-    delete m_RGP;
-    m_RGP = NULL;
+    RDDialog::critical(
+        m_MainWindow, tr("Error opening RGP"),
+        tr("Invalid filename specified to open as RGP Profile\n%1").arg(QString(filename)));
+    return false;
   }
-}
 
-bool CaptureContext::SelectRGPEvent(uint32_t eventId)
-{
-  if(m_RGP)
-  {
-    m_RGP->SelectEvent(eventId);
-    return true;
-  }
-  return false;
-}
+  QString RGPPath = lit("D:/RGP/RadeonGPUProfiler.exe");    // m_Config.ExternalTool_RadeonGPUProfiler;
 
-bool CaptureContext::HackProcessRGPInput(rdcstr input)
-{
-  if(m_RGP)
+  if(!QFileInfo(RGPPath).exists())
   {
-    return m_RGP->HackProcessInput(input);
+    RDDialog::critical(m_MainWindow, tr("Error opening RGP"),
+                       tr("Path to RGP is incorrectly configured\n\nCheck the settings window."));
+    return false;
   }
-  return false;
+
+  QString portStr = QString::number(RGPInterop::Port);
+
+  if(!QProcess::startDetached(RGPPath, QStringList() << QString(filename) << portStr))
+  {
+    RDDialog::critical(m_MainWindow, tr("Error opening RGP"), tr("Failed to launch RGP."));
+    return false;
+  }
+
+  m_RGP = new RGPInterop(*this);
+
+  return true;
 }
 
 rdcstr CaptureContext::GetResourceName(ResourceId id)

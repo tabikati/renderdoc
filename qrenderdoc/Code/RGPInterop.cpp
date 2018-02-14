@@ -23,8 +23,8 @@
  ******************************************************************************/
 
 #include "RGPInterop.h"
-#include <QApplication>
-#include <QClipboard>
+#include <QTcpServer>
+#include <QTcpSocket>
 
 template <>
 std::string DoStringise(const RGPCommand &el)
@@ -36,56 +36,52 @@ std::string DoStringise(const RGPCommand &el)
   END_ENUM_STRINGISE();
 }
 
-RGPInterop::RGPInterop(uint32_t version, ICaptureContext &ctx) : m_Ctx(ctx)
+RGPInterop::RGPInterop(ICaptureContext &ctx) : m_Ctx(ctx)
 {
-  m_Version = version;
+  m_Server = new QTcpServer(NULL);
+  m_Server->listen(QHostAddress::Any, Port);
 
-  if(ctx.APIProps().pipelineType == GraphicsAPI::Vulkan)
-  {
-    if(version == 1)
+  QObject::connect(m_Server, &QTcpServer::newConnection, [this]() {
+    if(m_Socket == NULL)
     {
-      m_EventNames << lit("vkCmdDispatch") << lit("vkCmdDraw") << lit("vkCmdDrawIndexed");
+      m_Socket = m_Server->nextPendingConnection();
+      ConnectionEstablished();
     }
-  }
-  else if(ctx.APIProps().pipelineType == GraphicsAPI::D3D12)
-  {
-    // these names must match those in DoStringise(const D3D12Chunk &el) for the chunks
-
-    if(version == 1)
+    else
     {
-      m_EventNames << lit("ID3D12GraphicsCommandList::Dispatch")
-                   << lit("ID3D12GraphicsCommandList::DrawInstanced")
-                   << lit("ID3D12GraphicsCommandList::DrawIndexedInstanced");
+      // close any other connections while we already have one
+      delete m_Server->nextPendingConnection();
     }
-  }
-
-  // if we don't have any event names, this API doesn't have a mapping or this was an unrecognised
-  // version.
-  if(m_EventNames.isEmpty())
-    return;
-
-  m_Event2RGP.resize(ctx.GetLastDrawcall()->eventId + 1);
-
-  // linearId 0 is invalid, so map to eventId 0.
-  // the first real event will be linearId 1
-  m_RGP2Event.push_back(0);
-
-  CreateMapping(ctx.CurDrawcalls());
-
-  DumpMapping();
+  });
 }
 
-void RGPInterop::SelectEvent(uint32_t eventId)
+RGPInterop::~RGPInterop()
+{
+  m_Server->close();
+  delete m_Server;
+}
+
+bool RGPInterop::HasRGPEvent(uint32_t eventId)
+{
+  return m_Event2RGP[eventId].interoplinearid != 0;
+}
+
+bool RGPInterop::SelectRGPEvent(uint32_t eventId)
 {
   RGPInteropEvent ev = m_Event2RGP[eventId];
 
   if(ev.interoplinearid == 0)
-    return;
+    return false;
 
   QString encoded = EncodeCommand(RGPCommand::SetEvent, ev.toParams(m_Version));
 
-  // hack - should be sent over IPC
-  QApplication::clipboard()->setText(encoded.trimmed());
+  if(m_Socket)
+  {
+    m_Socket->write(encoded.trimmed().toUtf8().data());
+    return true;
+  }
+
+  return false;
 }
 
 void RGPInterop::EventSelected(RGPInteropEvent event)
@@ -106,6 +102,29 @@ void RGPInterop::EventSelected(RGPInteropEvent event)
                << QString(draw->name);
 
   m_Ctx.SetEventID({}, eventId, eventId);
+}
+
+void RGPInterop::ConnectionEstablished()
+{
+  QObject::connect(m_Socket, &QAbstractSocket::disconnected, [this]() {
+    m_Socket->deleteLater();
+    m_Socket = NULL;
+  });
+
+  // TODO: initial handshake and protocol version
+
+  // TODO: negotiate mapping version
+  uint32_t version = 1;
+  CreateMapping(version);
+
+  // add a handler that appends all data to the read buffer and processes each time more comes in.
+  QObject::connect(m_Socket, &QIODevice::channelReadyRead, [this](int) {
+    // append all available data
+    m_ReadBuffer += m_Socket->readAll();
+
+    // process the read buffer
+    ProcessReadBuffer();
+  });
 }
 
 void RGPInterop::CreateMapping(const rdcarray<DrawcallDescription> &drawcalls)
@@ -137,6 +156,45 @@ void RGPInterop::CreateMapping(const rdcarray<DrawcallDescription> &drawcalls)
     if(!draw.children.empty())
       CreateMapping(draw.children);
   }
+}
+
+void RGPInterop::CreateMapping(uint32_t version)
+{
+  m_Version = version;
+
+  if(m_Ctx.APIProps().pipelineType == GraphicsAPI::Vulkan)
+  {
+    if(version == 1)
+    {
+      m_EventNames << lit("vkCmdDispatch") << lit("vkCmdDraw") << lit("vkCmdDrawIndexed");
+    }
+  }
+  else if(m_Ctx.APIProps().pipelineType == GraphicsAPI::D3D12)
+  {
+    // these names must match those in DoStringise(const D3D12Chunk &el) for the chunks
+
+    if(version == 1)
+    {
+      m_EventNames << lit("ID3D12GraphicsCommandList::Dispatch")
+                   << lit("ID3D12GraphicsCommandList::DrawInstanced")
+                   << lit("ID3D12GraphicsCommandList::DrawIndexedInstanced");
+    }
+  }
+
+  // if we don't have any event names, this API doesn't have a mapping or this was an unrecognised
+  // version.
+  if(m_EventNames.isEmpty())
+    return;
+
+  m_Event2RGP.resize(m_Ctx.GetLastDrawcall()->eventId + 1);
+
+  // linearId 0 is invalid, so map to eventId 0.
+  // the first real event will be linearId 1
+  m_RGP2Event.push_back(0);
+
+  CreateMapping(m_Ctx.CurDrawcalls());
+
+  DumpMapping();
 }
 
 QString RGPInterop::EncodeCommand(RGPCommand command, QVariantList params)
@@ -257,4 +315,34 @@ void RGPInterop::DumpMapping()
       file.close();
     }
   }
+}
+
+void RGPInterop::ProcessReadBuffer()
+{
+  // we might have partial data, so wait until we have a full command
+  do
+  {
+    int idx = m_ReadBuffer.indexOf("endcommand=");
+
+    // if we don't have endcommand= yet, we don't have a full command
+    if(idx < 0)
+      return;
+
+    idx = m_ReadBuffer.indexOf('\n', idx);
+
+    // also break if we don't have the full line yet including newline.
+    if(idx < 0)
+      return;
+
+    // extract the command and decode as UTF-8
+    QString command = QString::fromUtf8(m_ReadBuffer.data(), idx + 1);
+
+    // remove the command from our buffer, to retain any partial subsequent command we might have
+    m_ReadBuffer.remove(0, idx + 1);
+
+    // process this command
+    DecodeCommand(command);
+
+    // loop again - we might have read multiple commands
+  } while(true);
 }

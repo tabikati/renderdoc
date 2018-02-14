@@ -99,15 +99,11 @@ struct CaptureContextInvoker : ICaptureContext
   {
     return m_Ctx.GetDrawcall(eventId);
   }
-  virtual void CreateRGPMapping(uint32_t version) override
+  virtual bool OpenRGPProfile(const rdcstr &filename) override
   {
-    return m_Ctx.CreateRGPMapping(version);
+    return m_Ctx.OpenRGPProfile(filename);
   }
-  virtual bool SelectRGPEvent(uint32_t eventId) override { return m_Ctx.SelectRGPEvent(eventId); }
-  virtual bool HackProcessRGPInput(rdcstr input) override
-  {
-    return m_Ctx.HackProcessRGPInput(input);
-  }
+  virtual IRGPInterop *GetRGPInterop() override { return m_Ctx.GetRGPInterop(); }
   virtual const SDFile &GetStructuredFile() override { return m_Ctx.GetStructuredFile(); }
   virtual WindowingSystem CurWindowingSystem() override { return m_Ctx.CurWindowingSystem(); }
   virtual WindowingData CreateWindowingData(uintptr_t winId) override

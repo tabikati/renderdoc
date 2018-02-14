@@ -2279,7 +2279,7 @@ void MainWindow::on_action_Open_RGP_Profile_triggered()
     return;
   }
 
-  OpenRGPProfile(path);
+  m_Ctx.OpenRGPProfile(path);
 }
 
 void MainWindow::on_action_Create_RGP_Profile_triggered()
@@ -2315,7 +2315,7 @@ void MainWindow::on_action_Create_RGP_Profile_triggered()
   RDDialog::show(&popup);
 
   qInfo() << "RGP Capture created at" << QString(path);
-  OpenRGPProfile(path);
+  m_Ctx.OpenRGPProfile(path);
 
   if(!path.isEmpty())
   {
@@ -2342,14 +2342,6 @@ void MainWindow::on_action_Create_RGP_Profile_triggered()
       qCritical() << "Couldn't read from temporary RGP capture at " << QString(path);
     }
   }
-}
-
-void MainWindow::OpenRGPProfile(QString path)
-{
-  QString RGPPath = lit("D:/RGP/RadeonGPUProfiler.exe");
-
-  if(QFileInfo(RGPPath).exists() && !path.isEmpty())
-    QProcess::execute(RGPPath, QStringList() << QString(path));
 }
 
 void MainWindow::on_action_Attach_to_Running_Instance_triggered()

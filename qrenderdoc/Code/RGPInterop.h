@@ -30,6 +30,9 @@
 #include "Code/QRDUtils.h"
 #include "renderdoc_replay.h"
 
+class QTcpServer;
+class QTcpSocket;
+
 // macros to help define encode/decode functions
 
 #define VARIANT_ENCODE(p) lit(#p), p
@@ -71,20 +74,31 @@ struct RGPInteropEvent
   }
 };
 
-class RGPInterop
+class RGPInterop : public IRGPInterop
 {
 public:
-  RGPInterop(uint32_t version, ICaptureContext &ctx);
+  static const int Port = 29000;
 
-  void SelectEvent(uint32_t eventId);
-  bool HackProcessInput(QString input) { return DecodeCommand(input); }
-  bool Valid() { return !m_Event2RGP.isEmpty(); }
+  RGPInterop(ICaptureContext &ctx);
+  ~RGPInterop();
+
+  virtual bool HasRGPEvent(uint32_t eventId) override;
+  virtual bool SelectRGPEvent(uint32_t eventId) override;
+
 private:
+  void ConnectionEstablished();
+
   void CreateMapping(const rdcarray<DrawcallDescription> &drawcalls);
+  void CreateMapping(uint32_t version);
 
   void EventSelected(RGPInteropEvent event);
 
   uint32_t m_Version = 0;
+
+  QTcpServer *m_Server = NULL;
+  QTcpSocket *m_Socket = NULL;
+
+  QByteArray m_ReadBuffer;
 
   ICaptureContext &m_Ctx;
   QStringList m_EventNames;
@@ -93,4 +107,5 @@ private:
   QString EncodeCommand(RGPCommand command, QVariantList params);
   bool DecodeCommand(QString command);
   void DumpMapping();
+  void ProcessReadBuffer();
 };

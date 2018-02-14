@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>281</width>
+    <width>307</width>
     <height>298</height>
    </rect>
   </property>
@@ -185,20 +185,6 @@
        <property name="icon">
         <iconset resource="../Resources/resources.qrc">
          <normaloff>:/save.png</normaloff>:/save.png</iconset>
-       </property>
-       <property name="autoRaise">
-        <bool>true</bool>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QToolButton" name="rgpHack">
-       <property name="text">
-        <string>...</string>
-       </property>
-       <property name="icon">
-        <iconset resource="../Resources/resources.qrc">
-         <normaloff>:/connect.png</normaloff>:/connect.png</iconset>
        </property>
        <property name="autoRaise">
         <bool>true</bool>

@@ -52,8 +52,6 @@ class TimelineBar;
 class PythonShell;
 class ResourceInspector;
 
-class RGPInterop;
-
 class CaptureContext : public ICaptureContext
 {
   Q_DECLARE_TR_FUNCTIONS(CaptureContext);
@@ -118,9 +116,8 @@ public:
   const DrawcallDescription *CurDrawcall() override { return GetDrawcall(CurEvent()); }
   const DrawcallDescription *GetFirstDrawcall() override { return m_FirstDrawcall; };
   const DrawcallDescription *GetLastDrawcall() override { return m_LastDrawcall; };
-  void CreateRGPMapping(uint32_t version) override;
-  bool SelectRGPEvent(uint32_t eventId) override;
-  bool HackProcessRGPInput(rdcstr input) override;
+  bool OpenRGPProfile(const rdcstr &filename) override;
+  IRGPInterop *GetRGPInterop() override { return m_RGP; }
   const rdcarray<DrawcallDescription> &CurDrawcalls() override { return m_Drawcalls; }
   ResourceDescription *GetResource(ResourceId id) override { return m_Resources[id]; }
   const rdcarray<ResourceDescription> &GetResources() override { return m_ResourceList; }
@@ -307,7 +304,7 @@ private:
   DrawcallDescription *m_FirstDrawcall = NULL;
   DrawcallDescription *m_LastDrawcall = NULL;
 
-  RGPInterop *m_RGP = NULL;
+  IRGPInterop *m_RGP = NULL;
 
   QMap<ResourceId, TextureDescription *> m_Textures;
   rdcarray<TextureDescription> m_TextureList;
