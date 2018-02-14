@@ -85,6 +85,7 @@ APIProperties VulkanReplay::GetAPIProperties()
   ret.localRenderer = GraphicsAPI::Vulkan;
   ret.degraded = false;
   ret.shadersMutable = false;
+  ret.RGPCapture = rgpAPI != NULL;
 
   return ret;
 }

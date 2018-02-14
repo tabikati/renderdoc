@@ -286,6 +286,7 @@ MainWindow::MainWindow(ICaptureContext &ctx) : QMainWindow(NULL), ui(new Ui::Mai
   });
 
   ui->action_Start_Replay_Loop->setEnabled(false);
+  ui->action_Open_RGP_Profile->setEnabled(false);
   ui->action_Create_RGP_Profile->setEnabled(false);
   ui->action_Resolve_Symbols->setEnabled(false);
   ui->action_Resolve_Symbols->setText(tr("Resolve Symbols"));
@@ -1818,7 +1819,9 @@ void MainWindow::OnCaptureLoaded()
   ui->action_Recompress_Capture->setEnabled(true);
 
   ui->action_Start_Replay_Loop->setEnabled(true);
-  ui->action_Create_RGP_Profile->setEnabled(true);
+  ui->action_Open_RGP_Profile->setEnabled(
+      m_Ctx.Replay().GetCaptureAccess()->FindSectionByType(SectionType::AMDRGPProfile) >= 0);
+  ui->action_Create_RGP_Profile->setEnabled(m_Ctx.APIProps().RGPCapture && m_Ctx.IsCaptureLocal());
 
   setCaptureHasErrors(!m_Ctx.DebugMessages().empty());
 
@@ -1849,6 +1852,7 @@ void MainWindow::OnCaptureClosed()
   ui->menu_Export_As->setEnabled(false);
 
   ui->action_Start_Replay_Loop->setEnabled(false);
+  ui->action_Open_RGP_Profile->setEnabled(false);
   ui->action_Create_RGP_Profile->setEnabled(false);
 
   contextChooser->setEnabled(true);
@@ -2249,10 +2253,49 @@ void MainWindow::on_action_Start_Replay_Loop_triggered()
   m_Ctx.Replay().CancelReplayLoop();
 }
 
+void MainWindow::on_action_Open_RGP_Profile_triggered()
+{
+  if(!m_Ctx.IsCaptureLoaded())
+    return;
+
+  int idx = m_Ctx.Replay().GetCaptureAccess()->FindSectionByType(SectionType::AMDRGPProfile);
+
+  if(idx < 0)
+    return;
+
+  QString path = QDir::temp().absoluteFilePath(lit("renderdoc_extracted.rgp"));
+
+  QFile f(path);
+  if(f.open(QIODevice::WriteOnly | QIODevice::Truncate))
+  {
+    bytebuf buf = m_Ctx.Replay().GetCaptureAccess()->GetSectionContents(idx);
+
+    f.write((const char *)buf.data(), (qint64)buf.size());
+    f.flush();
+  }
+  else
+  {
+    qCritical() << "Couldn't open temporary file " << path << " for write";
+    return;
+  }
+
+  OpenRGPProfile(path);
+}
+
 void MainWindow::on_action_Create_RGP_Profile_triggered()
 {
   if(!m_Ctx.IsCaptureLoaded())
     return;
+
+  if(m_Ctx.Replay().GetCaptureAccess()->FindSectionByType(SectionType::AMDRGPProfile) >= 0)
+  {
+    QMessageBox::StandardButton res = RDDialog::question(
+        this, tr("Existing RGP profile"), tr("Capture already contains an RGP profile. Overwrite?"),
+        QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
+
+    if(res != QMessageBox::Yes)
+      return;
+  }
 
   QDialog popup;
   popup.setWindowFlags(popup.windowFlags() & ~Qt::WindowContextHelpButtonHint);
@@ -2272,7 +2315,37 @@ void MainWindow::on_action_Create_RGP_Profile_triggered()
   RDDialog::show(&popup);
 
   qInfo() << "RGP Capture created at" << QString(path);
+  OpenRGPProfile(path);
 
+  if(!path.isEmpty())
+  {
+    QFile f(path);
+    if(f.open(QIODevice::ReadOnly))
+    {
+      QByteArray contents = f.readAll();
+
+      bytebuf buf;
+      buf.resize(contents.count());
+      memcpy(&buf[0], contents.data(), contents.count());
+
+      SectionProperties props;
+      props.type = SectionType::AMDRGPProfile;
+      props.version = 1;
+      props.flags = SectionFlags::ZstdCompressed;
+
+      m_Ctx.Replay().GetCaptureAccess()->WriteSection(props, buf);
+
+      ui->action_Open_RGP_Profile->setEnabled(true);
+    }
+    else
+    {
+      qCritical() << "Couldn't read from temporary RGP capture at " << QString(path);
+    }
+  }
+}
+
+void MainWindow::OpenRGPProfile(QString path)
+{
   QString RGPPath = lit("D:/RGP/RadeonGPUProfiler.exe");
 
   if(QFileInfo(RGPPath).exists() && !path.isEmpty())

@@ -127,6 +127,7 @@ private slots:
   void on_action_Resolve_Symbols_triggered();
   void on_action_Recompress_Capture_triggered();
   void on_action_Start_Replay_Loop_triggered();
+  void on_action_Open_RGP_Profile_triggered();
   void on_action_Create_RGP_Profile_triggered();
   void on_action_Attach_to_Running_Instance_triggered();
   void on_action_Manage_Remote_Servers_triggered();
@@ -168,6 +169,8 @@ private:
   void exportCapture(const CaptureFileFormat &fmt);
 
   QString dragFilename(const QMimeData *mimeData);
+
+  void OpenRGPProfile(QString path);
 
   enum class UpdateResult
   {
