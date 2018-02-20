@@ -216,7 +216,7 @@ QString RGPInterop::EncodeCommand(RGPCommand command, QVariantList params)
 
 bool RGPInterop::DecodeCommand(QString command)
 {
-  QStringList lines = command.split(QLatin1Char('\n'));
+  QStringList lines = command.trimmed().split(QLatin1Char('\n'));
 
   if(lines[0].indexOf(lit("command=")) != 0 || lines.last().indexOf(lit("endcommand=")) != 0)
   {
