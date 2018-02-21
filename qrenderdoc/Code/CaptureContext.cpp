@@ -40,6 +40,7 @@
 #include "Windows/DebugMessageView.h"
 #include "Windows/Dialogs/CaptureDialog.h"
 #include "Windows/Dialogs/LiveCapture.h"
+#include "Windows/Dialogs/SettingsDialog.h"
 #include "Windows/EventBrowser.h"
 #include "Windows/MainWindow.h"
 #include "Windows/PerformanceCounterViewer.h"
@@ -1285,13 +1286,23 @@ bool CaptureContext::OpenRGPProfile(const rdcstr &filename)
     return false;
   }
 
-  QString RGPPath = lit("D:/RGP/RadeonGPUProfiler.exe");    // m_Config.ExternalTool_RadeonGPUProfiler;
+  QString RGPPath = m_Config.ExternalTool_RadeonGPUProfiler;
 
-  if(!QFileInfo(RGPPath).exists())
+  while(!QFileInfo(RGPPath).exists())
   {
-    RDDialog::critical(m_MainWindow, tr("Error opening RGP"),
-                       tr("Path to RGP is incorrectly configured\n\nCheck the settings window."));
-    return false;
+    QMessageBox::StandardButton res = RDDialog::question(
+        m_MainWindow, tr("Error opening RGP"),
+        tr("Path to RGP is incorrectly configured\n\nOpen settings window to configure path?"),
+        QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
+
+    if(res == QMessageBox::Cancel || res == QMessageBox::No)
+      return false;
+
+    SettingsDialog settings(*this, m_MainWindow);
+    settings.focusItem(lit("ExternalTool_RadeonGPUProfiler"));
+    RDDialog::show(&settings);
+
+    RGPPath = m_Config.ExternalTool_RadeonGPUProfiler;
   }
 
   QString portStr = QString::number(RGPInterop::Port);

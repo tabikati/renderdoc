@@ -129,6 +129,12 @@ E.g. a value of 3 means 0.005 / 10 = 5E-4</string>
             <property name="orientation">
              <enum>Qt::Vertical</enum>
             </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
            </spacer>
           </item>
           <item row="7" column="0">
@@ -476,7 +482,40 @@ e.g. a value of 5 means 0.123456789 will display as 0.12345</string>
             </property>
            </widget>
           </item>
-          <item row="1" column="1">
+          <item row="1" column="0" colspan="2">
+           <widget class="QLabel" name="label_17">
+            <property name="toolTip">
+             <string>Changes the directory where capture files are saved after being created, until saved manually or deleted.
+
+Defaults to %TEMP%.</string>
+            </property>
+            <property name="text">
+             <string>Path to Radeon GPU Profiler executable</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLineEdit" name="ExternalTool_RadeonGPUProfiler">
+            <property name="toolTip">
+             <string>Changes the directory where capture files are saved after being created, until saved manually or deleted.
+
+Defaults to %TEMP%.</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QPushButton" name="browseRGPPath">
+            <property name="toolTip">
+             <string>Changes the directory where capture files are saved after being created, until saved manually or deleted.
+
+Defaults to %TEMP%.</string>
+            </property>
+            <property name="text">
+             <string>Browse</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0" colspan="2">
            <spacer name="verticalSpacer_2">
             <property name="orientation">
              <enum>Qt::Vertical</enum>
