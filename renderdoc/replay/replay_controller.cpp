@@ -1397,34 +1397,7 @@ rdcarray<WindowingSystem> ReplayController::GetSupportedWindowSystems()
 }
 
 // temporary hack
-#pragma comment(lib, "3rdparty/RGP/RGP_API.lib")
-#include "3rdparty/RGP/RGP_API.h"
-
-#if DISABLED(RDOC_WIN32)
-
-// define a tiny stub, so other platforms without the lib will compile.
-RGP_API::RGP_API()
-{
-}
-RGP_API::~RGP_API()
-{
-}
-bool RGP_API::Init()
-{
-  return false;
-}
-void RGP_API::Finish()
-{
-}
-bool RGP_API::TriggerCapture(const char *captureFileName)
-{
-  return false;
-}
-bool RGP_API::IsProfileCaptured()
-{
-  return false;
-}
-#endif
+#include "driver/ihv/amd/official/RGP/RGP_API/RGP_API.h"
 
 RGP_API *rgpAPI = NULL;
 

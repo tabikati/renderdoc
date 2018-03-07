@@ -204,6 +204,9 @@
     <WriteLinesToFile File="$(OutDir)renderdoc.json" Lines="$(JSONContents)" Overwrite="true" />
   </Target>
   <ItemGroup>
+    <ProjectReference Include="..\ihv\amd\AMD_RGP.vcxproj">
+      <Project>{b33f8ffd-3c04-4779-9c3b-e2858387971b}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\shaders\spirv\renderdoc_spirv.vcxproj">
       <Project>{0aae0ad1-371b-4a36-9ed1-80e10e960605}</Project>
       <Private>false</Private>

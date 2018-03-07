@@ -46,7 +46,7 @@ extern "C" __declspec(dllexport) HRESULT
 ID3DDevice *GetD3D12DeviceIfAlloc(IUnknown *dev);
 
 // temporary hack
-#include "3rdparty/RGP/RGP_API.h"
+#include "driver/ihv/amd/official/RGP/RGP_API/RGP_API.h"
 extern RGP_API *rgpAPI;
 
 static const char *DXBCDisassemblyTarget = "DXBC";

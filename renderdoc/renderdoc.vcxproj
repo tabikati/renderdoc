@@ -78,9 +78,10 @@
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <AdditionalDependencies>ws2_32.lib;kernel32.lib;user32.lib;shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>tdh.lib;ws2_32.lib;kernel32.lib;user32.lib;shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>$(ProjectDir)os\win32\comexport.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <DelayLoadDLLs>tdh.dll</DelayLoadDLLs>
     </Link>
     <ProjectReference>
       <UseLibraryDependencyInputs>true</UseLibraryDependencyInputs>
@@ -122,7 +123,6 @@
     <ClInclude Include="3rdparty\plthook\plthook.h" />
     <ClInclude Include="3rdparty\pugixml\pugiconfig.hpp" />
     <ClInclude Include="3rdparty\pugixml\pugixml.hpp" />
-    <ClInclude Include="3rdparty\RGP\RGP_API.h" />
     <ClInclude Include="3rdparty\stb\stb_image.h" />
     <ClInclude Include="3rdparty\stb\stb_image_resize.h" />
     <ClInclude Include="3rdparty\stb\stb_image_write.h" />
@@ -533,6 +533,9 @@
     </ProjectReference>
     <ProjectReference Include="driver\ihv\amd\AMD.vcxproj">
       <Project>{5de5a561-548a-4dd7-90f0-06a2b39eae9a}</Project>
+    </ProjectReference>
+    <ProjectReference Include="driver\ihv\amd\AMD_RGP.vcxproj">
+      <Project>{b33f8ffd-3c04-4779-9c3b-e2858387971b}</Project>
     </ProjectReference>
     <ProjectReference Include="driver\vulkan\renderdoc_vulkan.vcxproj">
       <Project>{88c5dac6-30a0-4cfd-af51-540a977d1f3f}</Project>

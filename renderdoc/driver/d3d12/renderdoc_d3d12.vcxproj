@@ -143,6 +143,9 @@
     <ClInclude Include="precompiled.h" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\ihv\amd\AMD_RGP.vcxproj">
+      <Project>{b33f8ffd-3c04-4779-9c3b-e2858387971b}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\shaders\dxbc\renderdoc_dxbc.vcxproj">
       <Project>{c43ff27e-a155-4852-88ec-5ce9334c07a8}</Project>
       <Private>false</Private>

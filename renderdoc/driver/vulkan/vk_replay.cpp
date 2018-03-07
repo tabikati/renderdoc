@@ -34,7 +34,7 @@
 #include "vk_shader_cache.h"
 
 // temporary hack
-#include "3rdparty/RGP/RGP_API.h"
+#include "driver/ihv/amd/official/RGP/RGP_API/RGP_API.h"
 extern RGP_API *rgpAPI;
 
 #define VULKAN 1
