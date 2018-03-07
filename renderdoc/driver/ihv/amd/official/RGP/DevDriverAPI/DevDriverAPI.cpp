@@ -14,21 +14,25 @@
 
 //-----------------------------------------------------------------------------
 /// Initialization function. To be called before initializing the device.
-/// \param initOptions A structure of type DevDriverInitOptions containing
-///  the initialization parameters
+/// \param featureList An array of DevDriverFeatures structures containing
+///  a list of features to be enabled
+/// \param featureCount The number of features in the list
 /// \param pOutHandle A returned handle to the DevDriverAPI context.
 /// \return DEV_DRIVER_STATUS_SUCCESS if successful, or a DevDriverStatus error
 ///  code if not. If this function fails, pOutHandle will be unchanged.
 //-----------------------------------------------------------------------------
 static DevDriverStatus DEV_DRIVER_API_CALL
-Init(const DevDriverOptions initOptions[], int32_t optionsCount, DevDriverAPIContext* pOutHandle)
+Init(const DevDriverFeatures featureList[], uint32_t featureCount, DevDriverAPIContext* pOutHandle)
 {
-    for (int32_t loop = 0; loop < optionsCount; loop++)
+    for (uint32_t loop = 0; loop < featureCount; loop++)
     {
-        DevDriverOption option = initOptions[loop].shared.m_optionBase.m_option;
-        switch (option)
+        DevDriverFeature feature = featureList[loop].m_option;
+        switch (feature)
         {
-        case DEV_DRIVER_OPTION_ENABLE_RGP_PROTOCOL:
+        case DEV_DRIVER_FEATURE_ENABLE_RGP:
+            break;
+
+        default:
             break;
         }
     }

@@ -1,3 +1,4 @@
+// clang-format off
 //=============================================================================
 /// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 /// \author AMD Developer Tools Team
@@ -9,10 +10,6 @@
 #define DEV_DRIVER_API_H_
 
 #include <stdint.h>
-
-#ifndef __cplusplus
-#include <stdbool.h>
-#endif // #ifdef __cplusplus
 
 #if defined(_WIN32) || defined(__CYGWIN__)
   /// The API calling convention on windows.
@@ -55,34 +52,26 @@ typedef enum
 // An enum of options to pass into the DevDriverAPI
 typedef enum
 {
-    DEV_DRIVER_OPTION_ENABLE_RGP_PROTOCOL,
-    DEV_DRIVER_OPTION_ENABLE_SETTINGS_PROTOCOL,
-    DEV_DRIVER_OPTION_ENABLE_LOGGING_PROTOCOL,
-} DevDriverOption;
+    DEV_DRIVER_FEATURE_ENABLE_RGP           = 1,
+} DevDriverFeature;
 
-// structure containing any basic initialization options
+// structure containing any features relating to RGP
 typedef struct
 {
-    DevDriverOption     m_option;
-    uint32_t            m_size;
-} DevDriverOptionBase;
+    // presently nothing needed for RGP initialization
+} DevDriverFeatureRGP;
 
+// structure containing a developer driver feature. Specific
+// feature structures can be added to the union as needed
 typedef struct
 {
-    DevDriverOptionBase m_optionBase;
-    int32_t             m_data1;
-    int32_t             m_data2;
-} DevDriverOptionEx;
-
-typedef struct
-{
+    DevDriverFeature            m_option;
+    uint32_t                    m_size;
     union
     {
-        // other structures here 'derived' from DevDriverOptionBase
-        DevDriverOptionBase	m_optionBase;
-        DevDriverOptionEx   m_optionEx;
-    } shared;
-} DevDriverOptions;
+        DevDriverFeatureRGP     m_featureRGP;
+    };
+} DevDriverFeatures;
 
 // structure containing any options required for taking an RGP profile
 typedef struct
@@ -92,23 +81,24 @@ typedef struct
                                                 ///< If nullptr is specified, then a filename will be generated based
                                                 ///< on the process name and a date/time timestamp
 
-    // frame terminator values. Set the ENABLE_FRAME_TERMINATORS flag in the RGPProtocolConfigFlags to enable
-    uint64_t    m_beginFrameTerminatorTag;      ///< Queue marker begin tag (vulkan). Should be non-zero if being used
-    uint64_t    m_endFrameTerminatorTag;        ///< Queue marker end tag (vulkan). Should be non-zero if being used
-    const char* m_pBeginFrameTerminatorString;  ///< Queue marker begin string (D3D12). Should be non-null if being used
-    const char* m_pEndFrameTerminatorString;    ///< Queue marker end string (D3D12). Should be non-null if being used
+    // frame terminator values
+    uint64_t    m_beginFrameTerminatorTag;      ///< frame terminator begin tag (vulkan). Should be non-zero if being used
+    uint64_t    m_endFrameTerminatorTag;        ///< frame terminator end tag (vulkan). Should be non-zero if being used
+    const char* m_pBeginFrameTerminatorString;  ///< frame terminator begin string (D3D12). Should be non-null if being used
+    const char* m_pEndFrameTerminatorString;    ///< frame terminator end string (D3D12). Should be non-null if being used
 } RGPProfileOptions;
 
 // function typedefs
 
 /// Initialization function. To be called before initializing the device.
-/// \param initOptions A structure of type DevDriverInitOptions containing
-///  the initialization parameters
+/// \param featureList An array of DevDriverFeatures structures containing
+///  a list of features to be enabled
+/// \param featureCount The number of features in the list
 /// \param pOutHandle A returned handle to the DevDriverAPI context.
 /// \return DEV_DRIVER_STATUS_SUCCESS if successful, or a DevDriverStatus error
 ///  code if not. If this function fails, pOutHandle will be unchanged.
 typedef DevDriverStatus(DEV_DRIVER_API_CALL*
-    DevDriverFnInit)(const DevDriverOptions initOptions[], int32_t optionsCount, DevDriverAPIContext* pOutHandle);
+    DevDriverFnInit)(const DevDriverFeatures featureList[], uint32_t featureCount, DevDriverAPIContext* pOutHandle);
 
 /// Cleanup function. To be called at application shutdown.
 /// \param context The DevDriverAPI context
@@ -145,7 +135,7 @@ typedef DevDriverStatus(DEV_DRIVER_API_CALL*
 
 // structure containing the list of functions supported by this version of the API.
 // Also contains major and minor version numbers
-typedef struct
+typedef struct DevDriverAPI
 {
     uint32_t                        majorVersion;
     uint32_t                        minorVersion;
