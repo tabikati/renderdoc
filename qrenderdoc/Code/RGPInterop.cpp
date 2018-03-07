@@ -23,6 +23,7 @@
  ******************************************************************************/
 
 #include "RGPInterop.h"
+#include <QApplication.h>
 #include <QTcpServer>
 #include <QTcpSocket>
 
@@ -31,6 +32,7 @@ std::string DoStringise(const RGPCommand &el)
 {
   BEGIN_ENUM_STRINGISE(RGPCommand);
   {
+    STRINGISE_ENUM_CLASS_NAMED(Initialize, "initialize");
     STRINGISE_ENUM_CLASS_NAMED(SetEvent, "set_event");
   }
   END_ENUM_STRINGISE();
@@ -59,6 +61,21 @@ RGPInterop::~RGPInterop()
 {
   m_Server->close();
   delete m_Server;
+}
+
+void RGPInterop::InitializeRGP()
+{
+  RGPInteropInit init;
+
+  init.interop_version = 1;
+  init.interop_name = QStringLiteral("Renderdoc");
+
+  QString encoded = EncodeCommand(RGPCommand::Initialize, init.toParams(m_Version));
+
+  if(m_Socket)
+  {
+    m_Socket->write(encoded.trimmed().toUtf8().data());
+  }
 }
 
 bool RGPInterop::HasRGPEvent(uint32_t eventId)
@@ -102,6 +119,9 @@ void RGPInterop::EventSelected(RGPInteropEvent event)
                << QString(draw->name);
 
   m_Ctx.SetEventID({}, eventId, eventId);
+
+  m_Ctx.GetMainWindow()->Widget()->activateWindow();
+  m_Ctx.GetMainWindow()->Widget()->raise();
 }
 
 void RGPInterop::ConnectionEstablished()
@@ -111,7 +131,8 @@ void RGPInterop::ConnectionEstablished()
     m_Socket = NULL;
   });
 
-  // TODO: initial handshake and protocol version
+  // initial handshake and protocol version
+  InitializeRGP();
 
   // TODO: negotiate mapping version
   uint32_t version = 1;

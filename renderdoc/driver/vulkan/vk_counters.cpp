@@ -29,7 +29,6 @@
 #include "vk_resources.h"
 
 #include "driver/ihv/amd/amd_counters.h"
-#include "driver/ihv/amd/official/GPUPerfAPI/Include/GPUPerfAPI-VK.h"
 
 vector<GPUCounter> VulkanReplay::EnumerateCounters()
 {

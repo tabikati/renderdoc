@@ -26,6 +26,7 @@
 #include "driver/dx/official/d3dcompiler.h"
 #include "driver/dxgi/dxgi_common.h"
 #include "driver/ihv/amd/amd_counters.h"
+#include "driver/ihv/amd/amd_rgp.h"
 #include "maths/camera.h"
 #include "maths/matrix.h"
 #include "serialise/rdcfile.h"
@@ -44,10 +45,6 @@ extern "C" __declspec(dllexport) HRESULT
                                                D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid,
                                                void **ppDevice);
 ID3DDevice *GetD3D12DeviceIfAlloc(IUnknown *dev);
-
-// temporary hack
-#include "driver/ihv/amd/official/RGP/RGP_API/RGP_API.h"
-extern RGP_API *rgpAPI;
 
 static const char *DXBCDisassemblyTarget = "DXBC";
 
@@ -74,12 +71,7 @@ void D3D12Replay::Shutdown()
     m_ProxyResources[i]->Release();
   m_ProxyResources.clear();
 
-  if(rgpAPI)
-  {
-    rgpAPI->Finish();
-    // temp hack - let it leak since I'm not sure if it's safe to delete immediately
-    rgpAPI = NULL;
-  }
+  SAFE_DELETE(m_RGP);
 
   m_pDevice->Release();
 }
@@ -186,7 +178,7 @@ APIProperties D3D12Replay::GetAPIProperties()
   ret.vendor = m_Vendor;
   ret.degraded = false;
   ret.shadersMutable = false;
-  ret.RGPCapture = rgpAPI != NULL;
+  ret.RGPCapture = m_RGP != NULL;
 
   return ret;
 }
@@ -3367,8 +3359,10 @@ ReplayStatus D3D12_CreateReplayDevice(RDCFile *rdc, IReplayDriver **driver)
   if(initParams.MinimumFeatureLevel < D3D_FEATURE_LEVEL_11_0)
     initParams.MinimumFeatureLevel = D3D_FEATURE_LEVEL_11_0;
 
-  rgpAPI = new RGP_API;
-  rgpAPI->Init();
+  AMDRGPControl *rgp = new AMDRGPControl();
+
+  if(!rgp->Initialised())
+    SAFE_DELETE(rgp);
 
   ID3D12Device *dev = NULL;
   HRESULT hr = RENDERDOC_CreateWrappedD3D12Device(NULL, initParams.MinimumFeatureLevel,
@@ -3378,9 +3372,7 @@ ReplayStatus D3D12_CreateReplayDevice(RDCFile *rdc, IReplayDriver **driver)
   {
     RDCERR("Couldn't create a d3d12 device :(.");
 
-    rgpAPI->Finish();
-    // temp hack - let it leak since I'm not sure if it's safe to delete immediately
-    rgpAPI = NULL;
+    SAFE_DELETE(rgp);
 
     return ReplayStatus::APIHardwareUnsupported;
   }
@@ -3392,6 +3384,7 @@ ReplayStatus D3D12_CreateReplayDevice(RDCFile *rdc, IReplayDriver **driver)
   D3D12Replay *replay = wrappedDev->GetReplay();
 
   replay->SetProxy(rdc == NULL);
+  replay->SetRGP(rgp);
 
   *driver = (IReplayDriver *)replay;
   return ReplayStatus::Succeeded;

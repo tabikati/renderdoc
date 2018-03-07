@@ -743,6 +743,7 @@ private:
     return ((WrappedVulkan *)pUserData)
         ->DebugCallback(flags, objectType, object, location, messageCode, pLayerPrefix, pMessage);
   }
+  void AddFrameTerminator(uint64_t queueMarkerTag);
 
 public:
   WrappedVulkan();

@@ -23,6 +23,7 @@
  ******************************************************************************/
 
 #include "vk_core.h"
+#include "driver/ihv/amd/amd_rgp.h"
 #include "jpeg-compressor/jpge.h"
 #include "maths/formatpacking.h"
 #include "serialise/rdcfile.h"
@@ -2291,6 +2292,37 @@ bool WrappedVulkan::ProcessChunk(ReadSerialiser &ser, VulkanChunk chunk)
   return true;
 }
 
+void WrappedVulkan::AddFrameTerminator(uint64_t queueMarkerTag)
+{
+  VkCommandBuffer cmdBuffer = GetNextCmd();
+  VkResult vkr = VK_SUCCESS;
+
+  VkCommandBufferBeginInfo beginInfo = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, NULL,
+                                        VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT};
+
+  vkr = ObjDisp(cmdBuffer)->BeginCommandBuffer(Unwrap(cmdBuffer), &beginInfo);
+  RDCASSERTEQUAL(vkr, VK_SUCCESS);
+
+  vkr = ObjDisp(cmdBuffer)->EndCommandBuffer(Unwrap(cmdBuffer));
+  RDCASSERTEQUAL(vkr, VK_SUCCESS);
+
+  VkDebugMarkerObjectTagInfoEXT tagInfo = {VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_TAG_INFO_EXT,
+                                           nullptr};
+  tagInfo.objectType = VK_DEBUG_REPORT_OBJECT_TYPE_COMMAND_BUFFER_EXT;
+  tagInfo.object = uint64_t(Unwrap(cmdBuffer));
+  tagInfo.tagName = queueMarkerTag;
+  tagInfo.tagSize = 0;
+  tagInfo.pTag = nullptr;
+
+  // check for presence of the queue marker extension
+  if(ObjDisp(m_Device)->DebugMarkerSetObjectTagEXT)
+  {
+    vkr = ObjDisp(m_Device)->DebugMarkerSetObjectTagEXT(Unwrap(m_Device), &tagInfo);
+  }
+
+  SubmitCmds();
+}
+
 void WrappedVulkan::ReplayLog(uint32_t startEventID, uint32_t endEventID, ReplayLogType replayType)
 {
   bool partial = true;
@@ -2313,8 +2345,13 @@ void WrappedVulkan::ReplayLog(uint32_t startEventID, uint32_t endEventID, Replay
 
   m_State = CaptureState::ActiveReplaying;
 
+  // for some strange reason, commenting this line out causes just the preamble to be captured
   VkMarkerRegion::Set(StringFormat::Fmt("!!!!RenderDoc Internal: RenderDoc Replay %d (%d): %u->%u",
                                         (int)replayType, (int)partial, startEventID, endEventID));
+
+  FlushQ();
+
+  AddFrameTerminator(AMDRGPControl::GetBeginTag());
 
   {
     if(!partial)
@@ -2438,6 +2475,8 @@ void WrappedVulkan::ReplayLog(uint32_t startEventID, uint32_t endEventID, Replay
     SubmitCmds();
 #endif
   }
+
+  AddFrameTerminator(AMDRGPControl::GetEndTag());
 
   VkMarkerRegion::Set("!!!!RenderDoc Internal: Done replay");
 }

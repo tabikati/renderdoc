@@ -28,6 +28,7 @@
 #include <time.h>
 #include "common/dds_readwrite.h"
 #include "driver/ihv/amd/amd_isa.h"
+#include "driver/ihv/amd/amd_rgp.h"
 #include "jpeg-compressor/jpgd.h"
 #include "jpeg-compressor/jpge.h"
 #include "maths/formatpacking.h"
@@ -1396,15 +1397,15 @@ rdcarray<WindowingSystem> ReplayController::GetSupportedWindowSystems()
   return m_pDevice->GetSupportedWindowSystems();
 }
 
-// temporary hack
-#include "driver/ihv/amd/official/RGP/RGP_API/RGP_API.h"
-
-RGP_API *rgpAPI = NULL;
-
 rdcstr ReplayController::CreateRGPProfile(WindowingData window)
 {
-  if(!rgpAPI)
+  AMDRGPControl *rgp = m_pDevice->GetRGPControl();
+
+  if(!rgp)
+  {
+    RDCERR("RGP Capture is not supported on this API implementation");
     return "";
+  }
 
   std::string path = FileIO::GetTempFolderFilename() + "/renderdoc_rgp_capture.rgp";
 
@@ -1420,7 +1421,7 @@ rdcstr ReplayController::CreateRGPProfile(WindowingData window)
     output->Display();
   }
 
-  rgpAPI->TriggerCapture(path.c_str());
+  rgp->TriggerCapture(path);
 
   // delay a while to make sure the profiling is ready to go
   Threading::Sleep(5000);
@@ -1429,7 +1430,7 @@ rdcstr ReplayController::CreateRGPProfile(WindowingData window)
   // (6-7 runs needed)
   for(int i = 0; i < 10; i++)
   {
-    if(rgpAPI->IsProfileCaptured())
+    if(rgp->HasCapture())
     {
       RDCDEBUG("Got profile after %d runs", i);
       break;
@@ -1449,7 +1450,7 @@ rdcstr ReplayController::CreateRGPProfile(WindowingData window)
   // wait for 5 seconds for the capture to become ready
   for(int i = 0; i < 50; i++)
   {
-    if(rgpAPI->IsProfileCaptured())
+    if(rgp->HasCapture())
       return path;
 
     Threading::Sleep(100);

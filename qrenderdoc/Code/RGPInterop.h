@@ -45,7 +45,32 @@ class QTcpSocket;
 
 enum class RGPCommand
 {
+  Initialize,
   SetEvent,
+};
+
+struct RGPInteropInit
+{
+  int32_t interop_version = 0;
+  QString interop_name = QStringLiteral("Renderdoc");
+
+  QVariantList toParams(uint32_t version) const
+  {
+    return {VARIANT_ENCODE(interop_version), VARIANT_ENCODE(interop_name)};
+  }
+
+  void fromParams(uint32_t version, QVariantList list)
+  {
+    for(int i = 0; i + 1 < list.size(); i += 2)
+    {
+      QString paramName = list[i].toString();
+      QVariant paramValue = list[i + 1];
+      VARIANT_DECODE(interop_version);
+      VARIANT_DECODE(interop_name);
+
+      qWarning() << "Unrecognised param" << paramName;
+    }
+  }
 };
 
 struct RGPInteropEvent
@@ -86,6 +111,7 @@ public:
   virtual bool SelectRGPEvent(uint32_t eventId) override;
 
 private:
+  void InitializeRGP();
   void ConnectionEstablished();
 
   void CreateMapping(const rdcarray<DrawcallDescription> &drawcalls);
