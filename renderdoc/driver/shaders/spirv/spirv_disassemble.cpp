@@ -2086,6 +2086,8 @@ static bool IsUnmodified(SPVFunction *func, SPVInstruction *from, SPVInstruction
     return true;
   }
 
+  return false;
+  /*
   // otherwise, recurse
   bool ret = true;
 
@@ -2100,6 +2102,7 @@ static bool IsUnmodified(SPVFunction *func, SPVInstruction *from, SPVInstruction
   }
 
   return ret;
+  */
 }
 
 SPVModule::SPVModule()
