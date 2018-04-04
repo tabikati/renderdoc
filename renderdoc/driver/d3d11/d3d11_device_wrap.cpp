@@ -609,6 +609,10 @@ HRESULT WrappedID3D11Device::CreateTexture2D(const D3D11_TEXTURE2D_DESC *pDesc,
           GetResourceManager()->GetResourceRecord(GetIDForResource(wrapped));
       RDCASSERT(record);
 
+      if(pDesc->BindFlags & D3D11_BIND_DEPTH_STENCIL)
+        RDCLOG("GH924: Created depth-stencil texture %llu (%u x %u @ %s)", record->GetResourceID(),
+               pDesc->Width, pDesc->Height, ToStr(pDesc->Format).c_str());
+
       record->AddChunk(chunk);
       record->SetDataPtr(chunk->GetData());
     }
@@ -1216,6 +1220,9 @@ HRESULT WrappedID3D11Device::CreateDepthStencilView(ID3D11Resource *pResource,
 
         D3D11ResourceRecord *record = GetResourceManager()->AddResourceRecord(id);
         record->Length = 0;
+
+        RDCLOG("GH924: Created depth-stencil view %llu of texture %llu", record->GetResourceID(),
+               parent->GetResourceID());
 
         record->AddParent(parent);
 

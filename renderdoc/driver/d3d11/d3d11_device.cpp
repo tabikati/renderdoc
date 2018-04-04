@@ -62,6 +62,8 @@ WrappedID3D11Device::WrappedID3D11Device(ID3D11Device *realDevice, D3D11InitPara
   if(RenderDoc::Inst().GetCrashHandler())
     RenderDoc::Inst().GetCrashHandler()->RegisterMemoryRegion(this, sizeof(WrappedID3D11Device));
 
+  RDCLOG("GH924: %p WrappedID3D11Device constructor", this);
+
   m_SectionVersion = D3D11InitParams::CurrentVersion;
 
   uint32_t flags = WriteSerialiser::ChunkDuration | WriteSerialiser::ChunkTimestamp |
@@ -232,6 +234,8 @@ WrappedID3D11Device::~WrappedID3D11Device()
   if(m_pCurrentWrappedDevice == this)
     m_pCurrentWrappedDevice = NULL;
 
+  RDCLOG("GH924: %p WrappedID3D11Device destructor", this);
+
   D3D11MarkerRegion::device = NULL;
 
   RenderDoc::Inst().RemoveDeviceFrameCapturer((ID3D11Device *)this);
@@ -298,6 +302,9 @@ void WrappedID3D11Device::CheckForDeath()
   if(!m_Alive)
     return;
 
+  RDCLOG("GH924: %p WrappedID3D11Device::CheckForDeath (%u / %u / %u)", this,
+         m_RefCounter.GetRefCount(), m_SoftRefCounter.GetRefCount(), m_InternalRefcount);
+
   if(m_RefCounter.GetRefCount() == 0)
   {
     RDCASSERT(m_SoftRefCounter.GetRefCount() >= m_InternalRefcount);
@@ -305,6 +312,7 @@ void WrappedID3D11Device::CheckForDeath()
     // MEGA HACK
     if(m_SoftRefCounter.GetRefCount() <= m_InternalRefcount || IsReplayMode(m_State))
     {
+      RDCLOG("GH924: %p WrappedID3D11Device self deleting", this);
       m_Alive = false;
       delete this;
     }
@@ -2285,6 +2293,8 @@ void WrappedID3D11Device::SetResourceName(ID3D11DeviceChild *pResource, const ch
 void WrappedID3D11Device::ReleaseResource(ID3D11DeviceChild *res)
 {
   ResourceId idx = GetIDForResource(res);
+
+  RDCLOG("GH924: ReleaseResource %llu", idx);
 
   // wrapped resources get released all the time, we don't want to
   // try and slerp in a resource release. Just the explicit ones

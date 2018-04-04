@@ -81,6 +81,8 @@ struct D3D11ResourceRecord : public ResourceRecord
 
   ~D3D11ResourceRecord()
   {
+    RDCLOG("GH924: destroying resource record %llu", GetResourceID());
+
     for(int i = 0; i < NumSubResources; i++)
     {
       SubResources[i]->DeleteChunks();

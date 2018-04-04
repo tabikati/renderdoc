@@ -809,6 +809,8 @@ void ResourceManager<Configuration>::InsertReferencedChunks(WriteSerialiser &ser
     float num = float(m_ResourceRecords.size());
     float idx = 0.0f;
 
+    RDCLOG("GH924: Ref All resources");
+
     for(auto it = m_ResourceRecords.begin(); it != m_ResourceRecords.end(); ++it)
     {
       RenderDoc::Inst().SetProgress(CaptureProgress::AddReferencedResources, idx / num);
@@ -832,7 +834,11 @@ void ResourceManager<Configuration>::InsertReferencedChunks(WriteSerialiser &ser
 
       RecordType *record = GetResourceRecord(it->first);
       if(record)
+      {
+        RDCLOG("GH924: Adding chunks for %llu", it->first);
+
         record->Insert(sortedChunks);
+      }
     }
   }
 

@@ -185,6 +185,8 @@ private:
 
     m_InsideCreate = true;
 
+    RDCLOG("GH924: Creating D3D11 device");
+
     RDCDEBUG("Call to Create_Internal Flags %x", Flags);
 
     bool reading = RenderDoc::Inst().IsReplayApp();
