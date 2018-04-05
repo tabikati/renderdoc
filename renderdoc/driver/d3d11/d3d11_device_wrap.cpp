@@ -883,6 +883,9 @@ HRESULT WrappedID3D11Device::CreateShaderResourceView(ID3D11Resource *pResource,
         D3D11ResourceRecord *record = GetResourceManager()->AddResourceRecord(id);
         record->Length = 0;
 
+        RDCLOG("GH924: Created shader-resource view %llu of texture %llu", record->GetResourceID(),
+               parent->GetResourceID());
+
         record->AddParent(parent);
 
         record->AddChunk(chunk);

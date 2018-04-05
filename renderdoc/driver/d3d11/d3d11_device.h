@@ -563,26 +563,34 @@ public:
   void InternalRef()
   {
     InterlockedIncrement(&m_InternalRefcount);
+    /*
     RDCLOG("GH924: %p WrappedID3D11Device::InternalRef (%u / %u / %u)", this,
            m_RefCounter.GetRefCount(), m_SoftRefCounter.GetRefCount(), m_InternalRefcount);
+           */
   }
   void InternalRelease()
   {
     InterlockedDecrement(&m_InternalRefcount);
+    /*
     RDCLOG("GH924: %p WrappedID3D11Device::InternalRelease (%u / %u / %u)", this,
            m_RefCounter.GetRefCount(), m_SoftRefCounter.GetRefCount(), m_InternalRefcount);
+           */
   }
   void SoftRef()
   {
     m_SoftRefCounter.AddRef();
+    /*
     RDCLOG("GH924: %p WrappedID3D11Device::SoftRef (%u / %u / %u)", this,
            m_RefCounter.GetRefCount(), m_SoftRefCounter.GetRefCount(), m_InternalRefcount);
+           */
   }
   void SoftRelease()
   {
     m_SoftRefCounter.Release();
+    /*
     RDCLOG("GH924: %p WrappedID3D11Device::SoftRelease (%u / %u / %u)", this,
            m_RefCounter.GetRefCount(), m_SoftRefCounter.GetRefCount(), m_InternalRefcount);
+           */
     CheckForDeath();
   }
   void CheckForDeath();
@@ -599,15 +607,19 @@ public:
   ULONG STDMETHODCALLTYPE AddRef()
   {
     ULONG ret = m_RefCounter.AddRef();
+    /*
     RDCLOG("GH924: %p WrappedID3D11Device::AddRef (%u / %u / %u)", this, m_RefCounter.GetRefCount(),
            m_SoftRefCounter.GetRefCount(), m_InternalRefcount);
+           */
     return ret;
   }
   ULONG STDMETHODCALLTYPE Release()
   {
     unsigned int ret = m_RefCounter.Release();
+    /*
     RDCLOG("GH924: %p WrappedID3D11Device::Release (%u / %u / %u)", this,
            m_RefCounter.GetRefCount(), m_SoftRefCounter.GetRefCount(), m_InternalRefcount);
+           */
     CheckForDeath();
     return ret;
   }

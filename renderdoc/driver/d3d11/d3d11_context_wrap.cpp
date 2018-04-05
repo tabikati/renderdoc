@@ -774,6 +774,9 @@ void WrappedID3D11DeviceContext::VSSetShaderResources(
     {
       MarkResourceReferenced(GetIDForResource(ppShaderResourceViews[i]), eFrameRef_Read);
       MarkResourceReferenced(GetViewResourceResID(ppShaderResourceViews[i]), eFrameRef_Read);
+
+      RDCLOG("GH924: Context %llu ref'd shader-resource view %llu", GetResourceID(),
+             GetIDForResource(ppShaderResourceViews[i]));
     }
 
     SRVs[i] = UNWRAP(WrappedID3D11ShaderResourceView1, ppShaderResourceViews[i]);
@@ -1153,6 +1156,9 @@ void WrappedID3D11DeviceContext::HSSetShaderResources(
     {
       MarkResourceReferenced(GetIDForResource(ppShaderResourceViews[i]), eFrameRef_Read);
       MarkResourceReferenced(GetViewResourceResID(ppShaderResourceViews[i]), eFrameRef_Read);
+
+      RDCLOG("GH924: Context %llu ref'd shader-resource view %llu", GetResourceID(),
+             GetIDForResource(ppShaderResourceViews[i]));
     }
 
     SRVs[i] = UNWRAP(WrappedID3D11ShaderResourceView1, ppShaderResourceViews[i]);
@@ -1531,6 +1537,9 @@ void WrappedID3D11DeviceContext::DSSetShaderResources(
     {
       MarkResourceReferenced(GetIDForResource(ppShaderResourceViews[i]), eFrameRef_Read);
       MarkResourceReferenced(GetViewResourceResID(ppShaderResourceViews[i]), eFrameRef_Read);
+
+      RDCLOG("GH924: Context %llu ref'd shader-resource view %llu", GetResourceID(),
+             GetIDForResource(ppShaderResourceViews[i]));
     }
 
     SRVs[i] = UNWRAP(WrappedID3D11ShaderResourceView1, ppShaderResourceViews[i]);
@@ -1911,6 +1920,9 @@ void WrappedID3D11DeviceContext::GSSetShaderResources(
     {
       MarkResourceReferenced(GetIDForResource(ppShaderResourceViews[i]), eFrameRef_Read);
       MarkResourceReferenced(GetViewResourceResID(ppShaderResourceViews[i]), eFrameRef_Read);
+
+      RDCLOG("GH924: Context %llu ref'd shader-resource view %llu", GetResourceID(),
+             GetIDForResource(ppShaderResourceViews[i]));
     }
 
     SRVs[i] = UNWRAP(WrappedID3D11ShaderResourceView1, ppShaderResourceViews[i]);
@@ -2684,6 +2696,9 @@ void WrappedID3D11DeviceContext::PSSetShaderResources(
     {
       MarkResourceReferenced(GetIDForResource(ppShaderResourceViews[i]), eFrameRef_Read);
       MarkResourceReferenced(GetViewResourceResID(ppShaderResourceViews[i]), eFrameRef_Read);
+
+      RDCLOG("GH924: Context %llu ref'd shader-resource view %llu", GetResourceID(),
+             GetIDForResource(ppShaderResourceViews[i]));
     }
 
     SRVs[i] = UNWRAP(WrappedID3D11ShaderResourceView1, ppShaderResourceViews[i]);
@@ -3132,6 +3147,9 @@ void WrappedID3D11DeviceContext::OMSetRenderTargets(UINT NumViews,
       if(m_CurrentPipelineState->IsViewportPartial())
         MarkResourceReferenced(GetViewResourceResID(pDepthStencilView), eFrameRef_Read);
       MarkResourceReferenced(GetViewResourceResID(pDepthStencilView), eFrameRef_Write);
+
+      RDCLOG("GH924: Context %llu ref'd depth-stencil view %llu", GetResourceID(),
+             GetIDForResource(pDepthStencilView));
     }
   }
 
@@ -3429,6 +3447,9 @@ void WrappedID3D11DeviceContext::OMSetRenderTargetsAndUnorderedAccessViews(
       {
         MarkResourceReferenced(GetIDForResource(pDepthStencilView), eFrameRef_Read);
         MarkResourceReferenced(GetViewResourceResID(pDepthStencilView), eFrameRef_Read);
+
+        RDCLOG("GH924: Context %llu ref'd depth-stencil view %llu", GetResourceID(),
+               GetIDForResource(pDepthStencilView));
       }
     }
   }
@@ -4535,6 +4556,9 @@ void WrappedID3D11DeviceContext::CSSetShaderResources(
     {
       MarkResourceReferenced(GetIDForResource(ppShaderResourceViews[i]), eFrameRef_Read);
       MarkResourceReferenced(GetViewResourceResID(ppShaderResourceViews[i]), eFrameRef_Read);
+
+      RDCLOG("GH924: Context %llu ref'd shader-resource view %llu", GetResourceID(),
+             GetIDForResource(ppShaderResourceViews[i]));
     }
 
     SRVs[i] = UNWRAP(WrappedID3D11ShaderResourceView1, ppShaderResourceViews[i]);
@@ -5085,6 +5109,8 @@ void WrappedID3D11DeviceContext::ExecuteCommandList(ID3D11CommandList *pCommandL
 
     WrappedID3D11CommandList *wrapped = (WrappedID3D11CommandList *)pCommandList;
 
+    RDCLOG("GH924: Executing command list %llu.", wrapped->GetResourceID());
+
     if(!wrapped->IsCaptured())
     {
       // we don't have this command list captured. This frame is no longer successful
@@ -5219,6 +5245,9 @@ HRESULT WrappedID3D11DeviceContext::FinishCommandList(BOOL RestoreDeferredContex
 
   WrappedID3D11CommandList *wrapped =
       new WrappedID3D11CommandList(real, m_pDevice, this, cmdListSuccessful);
+
+  RDCLOG("GH924: Deferred Context %llu finished => command list %llu.", GetResourceID(),
+         wrapped->GetResourceID());
 
   if(IsCaptureMode(m_State))
   {

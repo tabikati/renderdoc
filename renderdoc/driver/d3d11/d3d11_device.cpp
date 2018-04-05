@@ -302,8 +302,10 @@ void WrappedID3D11Device::CheckForDeath()
   if(!m_Alive)
     return;
 
+  /*
   RDCLOG("GH924: %p WrappedID3D11Device::CheckForDeath (%u / %u / %u)", this,
          m_RefCounter.GetRefCount(), m_SoftRefCounter.GetRefCount(), m_InternalRefcount);
+         */
 
   if(m_RefCounter.GetRefCount() == 0)
   {
