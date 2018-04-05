@@ -40,12 +40,17 @@ void GLResourceManager::MarkVAOReferenced(GLResource res, FrameRefType ref, bool
   {
     MarkResourceFrameReferenced(res, ref == eFrameRef_Unknown ? eFrameRef_Unknown : eFrameRef_Read);
 
+    RDCLOG("FOOBAR: MarkVAOReferenced(VAO %llu (name %u) )", GetID(res), res.name);
+
     GLint numVBufferBindings = 16;
     gl.glGetIntegerv(eGL_MAX_VERTEX_ATTRIB_BINDINGS, &numVBufferBindings);
 
     for(GLuint i = 0; i < (GLuint)numVBufferBindings; i++)
     {
       GLuint buffer = GetBoundVertexBuffer(gl, i);
+
+      RDCLOG("FOOBAR: VAO vbuffer %u: %llu (name %u)", i, GetID(BufferRes(res.Context, buffer)),
+             buffer);
 
       MarkResourceFrameReferenced(BufferRes(res.Context, buffer), ref);
     }

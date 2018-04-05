@@ -93,6 +93,8 @@ void WrappedOpenGL::glGenBuffers(GLsizei n, GLuint *buffers)
     GLResource res = BufferRes(GetCtx(), buffers[i]);
     ResourceId id = GetResourceManager()->RegisterResource(res);
 
+    RDCLOG("FOOBAR: Created Buffer %llu (name %u)", id, res.name);
+
     if(IsCaptureMode(m_State))
     {
       Chunk *chunk = NULL;
@@ -270,6 +272,9 @@ void WrappedOpenGL::glBindBuffer(GLenum target, GLuint buffer)
 
     m_ContextRecord->AddChunk(chunk);
   }
+
+  RDCLOG("FOOBAR: glBindBuffer(%s, %llu)", ToStr(target).c_str(),
+         GetResourceManager()->GetID(BufferRes(GetCtx(), buffer)));
 
   if(buffer == 0)
   {
@@ -720,6 +725,9 @@ void WrappedOpenGL::glBufferData(GLenum target, GLsizeiptr size, const void *dat
       SAFE_DELETE_ARRAY(dummy);
       return;
     }
+
+    RDCLOG("FOOBAR: glBufferData(%s, %llu, %u)", ToStr(target).c_str(), record->GetResourceID(),
+           uint32_t(size));
 
     // detect buffer orphaning and just update backing store
     if(IsBackgroundCapturing(m_State) && record->HasDataPtr() &&
@@ -3127,6 +3135,10 @@ void WrappedOpenGL::glVertexAttribPointer(GLuint index, GLint size, GLenum type,
     GLResourceRecord *varecord = cd.m_VertexArrayRecord;
     GLResourceRecord *r = IsActiveCapturing(m_State) ? m_ContextRecord : varecord;
 
+    RDCLOG("FOOBAR: glVertexAttribPointer VAO %llu with buffer %llu",
+           varecord ? varecord->GetResourceID() : ResourceId(),
+           bufrecord ? bufrecord->GetResourceID() : ResourceId());
+
     if(r)
     {
       if(IsBackgroundCapturing(m_State) && !RecordUpdateCheck(varecord))
@@ -4043,6 +4055,8 @@ void WrappedOpenGL::glGenVertexArrays(GLsizei n, GLuint *arrays)
     GLResource res = VertexArrayRes(GetCtx(), arrays[i]);
     ResourceId id = GetResourceManager()->RegisterResource(res);
 
+    RDCLOG("FOOBAR: Created VAO %llu (name %u)", id, res.name);
+
     if(IsCaptureMode(m_State))
     {
       Chunk *chunk = NULL;
@@ -4161,6 +4175,8 @@ void WrappedOpenGL::glBindVertexArray(GLuint array)
           GetResourceManager()->GetResourceRecord(VertexArrayRes(GetCtx(), array));
     }
   }
+
+  RDCLOG("FOOBAR: Bind VAO %llu", record ? record->GetResourceID() : ResourceId());
 
   if(IsActiveCapturing(m_State))
   {
@@ -4595,6 +4611,9 @@ void WrappedOpenGL::glDeleteBuffers(GLsizei n, const GLuint *buffers)
   for(GLsizei i = 0; i < n; i++)
   {
     GLResource res = BufferRes(GetCtx(), buffers[i]);
+
+    RDCLOG("FOOBAR: Delete buffer %llu", GetResourceManager()->GetID(res));
+
     if(GetResourceManager()->HasCurrentResource(res))
     {
       GLResourceRecord *record = GetResourceManager()->GetResourceRecord(res);
@@ -4629,6 +4648,9 @@ void WrappedOpenGL::glDeleteVertexArrays(GLsizei n, const GLuint *arrays)
   for(GLsizei i = 0; i < n; i++)
   {
     GLResource res = VertexArrayRes(GetCtx(), arrays[i]);
+
+    RDCLOG("FOOBAR: Delete VAO %llu", GetResourceManager()->GetID(res));
+
     if(GetResourceManager()->HasCurrentResource(res))
     {
       GetResourceManager()->MarkCleanResource(res);

@@ -823,10 +823,14 @@ void WrappedOpenGL::DeleteContext(void *contextHandle)
       m_Real.glDeleteTextures(1, &ctxdata.GlyphTexture);
   }
 
+  RDCLOG("FOOBAR: Deleting client memory buffers on context %p", contextHandle);
+
   if(ctxdata.m_ClientMemoryVBOs[0])
     glDeleteBuffers(ARRAY_COUNT(ctxdata.m_ClientMemoryVBOs), ctxdata.m_ClientMemoryVBOs);
   if(ctxdata.m_ClientMemoryIBO)
     glDeleteBuffers(1, &ctxdata.m_ClientMemoryIBO);
+
+  RDCLOG("FOOBAR: Done deleting client memory buffers on context %p", contextHandle);
 
   for(auto it = m_LastContexts.begin(); it != m_LastContexts.end(); ++it)
   {
@@ -1029,6 +1033,8 @@ void WrappedOpenGL::ActivateContext(GLWindowingData winData)
         GLuint prevArrayBuffer = 0;
         glGetIntegerv(eGL_ARRAY_BUFFER_BINDING, (GLint *)&prevArrayBuffer);
 
+        RDCLOG("FOOBAR: Creating client memory buffers on context %p", winData.ctx);
+
         // Initialize VBOs used in case we copy from client memory.
         gl_CurChunk = GLChunk::glGenBuffers;
         glGenBuffers(ARRAY_COUNT(ctxdata.m_ClientMemoryVBOs), ctxdata.m_ClientMemoryVBOs);
@@ -1047,6 +1053,8 @@ void WrappedOpenGL::ActivateContext(GLWindowingData winData)
 
         gl_CurChunk = GLChunk::glGenBuffers;
         glGenBuffers(1, &ctxdata.m_ClientMemoryIBO);
+
+        RDCLOG("FOOBAR: Done creating client memory buffers on context %p", winData.ctx);
       }
     }
 
