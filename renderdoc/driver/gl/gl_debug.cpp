@@ -1137,10 +1137,13 @@ void GLReplay::DeleteDebugData()
         drv.glDeleteProgram(DebugData.minmaxTileProgram[idx]);
       if(DebugData.histogramProgram[idx])
         drv.glDeleteProgram(DebugData.histogramProgram[idx]);
-
-      if(DebugData.minmaxResultProgram[i])
-        drv.glDeleteProgram(DebugData.minmaxResultProgram[i]);
     }
+  }
+
+  for(int i = 0; i < 3; i++)
+  {
+    if(DebugData.minmaxResultProgram[i])
+      drv.glDeleteProgram(DebugData.minmaxResultProgram[i]);
   }
 
   if(DebugData.meshPickProgram)
