@@ -555,6 +555,9 @@ bool PatchManifest(std::vector<byte> &manifestBytes)
     // skip resource map
     cur += ((ResChunk_header *)cur)->size;
 
+    // update the end because the size increased
+    end = start + manifestBytes.size();
+
     while(cur < end)
     {
       ResXMLTree_node *node = (ResXMLTree_node *)cur;
