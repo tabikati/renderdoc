@@ -2893,6 +2893,10 @@ enumerated with IDs in the appropriate ranges.
 
   Number of samples that passed depth/stencil test.
 
+.. data:: AnySamplesPassed
+
+  Whether any sample passes the depth/stencil test.
+
 .. data:: VSInvocations
 
   Number of times a :data:`vertex shader <ShaderStage.Vertex>` was invoked.
@@ -2963,6 +2967,7 @@ enum class GPUCounter : uint32_t
   RasterizerInvocations,
   RasterizedPrimitives,
   SamplesPassed,
+  AnySamplesPassed,
   VSInvocations,
   HSInvocations,
   TCSInvocations = HSInvocations,
