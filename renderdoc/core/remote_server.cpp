@@ -1244,6 +1244,20 @@ public:
 
         for(const std::string &line : lines)
         {
+          //  The structure of the 'dumpsys package' output should be like this:
+          //  ...
+          //  Activity Resolver Table:
+          //     ...
+          //  Receiver Resolver Table:
+          //     ...
+          //  Service Resolver Table:
+          //    ...
+          //  Provider Resolver Table:
+          //     ...
+          //  ...
+          if(!strcmp(line.c_str(), "Receiver Resolver Table:"))
+            break;
+
           // quick check, look for a /
           if(line.find('/') == std::string::npos)
             continue;
