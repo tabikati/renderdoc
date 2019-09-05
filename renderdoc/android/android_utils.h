@@ -49,6 +49,7 @@ bool toolExists(const std::string &path);
 
 std::string GetFirstMatchingLine(const std::string &haystack, const std::string &needle);
 
+int getAndroidApiLevel(const std::string &deviceID);
 bool IsSupported(std::string deviceID);
 std::string GetFriendlyName(std::string deviceID);
 

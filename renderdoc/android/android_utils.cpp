@@ -168,10 +168,7 @@ std::string GetPathForPackage(const std::string &deviceID, const std::string &pa
 
 bool IsSupported(std::string deviceID)
 {
-  std::string api =
-      trim(Android::adbExecCommand(deviceID, "shell getprop ro.build.version.sdk").strStdout);
-
-  int apiVersion = atoi(api.c_str());
+  int apiVersion = getAndroidApiLevel(deviceID);
 
   // SDK 23 == Android 6.0, our minimum spec. Only fail if we did parse an SDK string, in case some
   // Android devices don't support the query - we assume they are new enough.
@@ -183,6 +180,13 @@ bool IsSupported(std::string deviceID)
   }
 
   return true;
+}
+
+int getAndroidApiLevel(const std::string &deviceID)
+{
+  std::string api =
+      trim(Android::adbExecCommand(deviceID, "shell getprop ro.build.version.sdk").strStdout);
+  return atoi(api.c_str());
 }
 
 std::string GetFriendlyName(std::string deviceID)

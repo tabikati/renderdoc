@@ -42,6 +42,12 @@ void CloneDisplay(Display *dpy);
 }
 #endif
 
+typedef void *(*FUNCTIONPOINTER)(void *a, const char *b);
+static FUNCTIONPOINTER getFunctionAddress = Process::GetFunctionAddress;
+static FUNCTIONPOINTER getNextLayerProcAddress;
+static void *layerId;
+static bool useGlesLayer;
+
 class EGLHook : LibraryHook
 {
 public:
@@ -527,6 +533,9 @@ HOOK_EXPORT EGLBoolean EGLAPIENTRY eglSwapBuffersWithDamageKHR_renderdoc_hooked(
 HOOK_EXPORT __eglMustCastToProperFunctionPointerType EGLAPIENTRY
 eglGetProcAddress_renderdoc_hooked(const char *func)
 {
+  if(useGlesLayer)
+    return (__eglMustCastToProperFunctionPointerType)getFunctionAddress(nullptr, func);
+
   if(RenderDoc::Inst().IsReplayApp())
   {
     if(!EGL.GetProcAddress)
@@ -634,13 +643,13 @@ HOOK_EXPORT __eglMustCastToProperFunctionPointerType EGLAPIENTRY eglGetProcAddre
 // dlopen() for libEGL.so to ourselves, and dlsym() for any of these entry points must return a
 // valid function. We don't need to intercept them, so we just pass it along
 
-#define EGL_PASSTHRU_0(ret, function)                                                     \
-  typedef ret (*CONCAT(function, _hooktype))();                                           \
-  HOOK_EXPORT ret EGLAPIENTRY function()                                                  \
-  {                                                                                       \
+#define EGL_PASSTHRU_0(ret, function)                                                            \
+  typedef ret (*CONCAT(function, _hooktype))();                                                  \
+  HOOK_EXPORT ret EGLAPIENTRY function()                                                         \
+  {                                                                                          \
     EnsureRealLibraryLoaded();                                                            \
     CONCAT(function, _hooktype)                                                           \
-    real = (CONCAT(function, _hooktype))Process::GetFunctionAddress(eglhook.handle,       \
+    real = (CONCAT(function, _hooktype))getFunctionAddress(eglhook.handle,       \
                                                                     STRINGIZE(function)); \
     return real();                                                                        \
   }
@@ -651,7 +660,7 @@ HOOK_EXPORT __eglMustCastToProperFunctionPointerType EGLAPIENTRY eglGetProcAddre
   {                                                                                       \
     EnsureRealLibraryLoaded();                                                            \
     CONCAT(function, _hooktype)                                                           \
-    real = (CONCAT(function, _hooktype))Process::GetFunctionAddress(eglhook.handle,       \
+    real = (CONCAT(function, _hooktype))getFunctionAddress(eglhook.handle,       \
                                                                     STRINGIZE(function)); \
     return real(p1);                                                                      \
   }
@@ -662,7 +671,7 @@ HOOK_EXPORT __eglMustCastToProperFunctionPointerType EGLAPIENTRY eglGetProcAddre
   {                                                                                       \
     EnsureRealLibraryLoaded();                                                            \
     CONCAT(function, _hooktype)                                                           \
-    real = (CONCAT(function, _hooktype))Process::GetFunctionAddress(eglhook.handle,       \
+    real = (CONCAT(function, _hooktype))getFunctionAddress(eglhook.handle,       \
                                                                     STRINGIZE(function)); \
     return real(p1, p2);                                                                  \
   }
@@ -673,7 +682,7 @@ HOOK_EXPORT __eglMustCastToProperFunctionPointerType EGLAPIENTRY eglGetProcAddre
   {                                                                                       \
     EnsureRealLibraryLoaded();                                                            \
     CONCAT(function, _hooktype)                                                           \
-    real = (CONCAT(function, _hooktype))Process::GetFunctionAddress(eglhook.handle,       \
+    real = (CONCAT(function, _hooktype))getFunctionAddress(eglhook.handle,       \
                                                                     STRINGIZE(function)); \
     return real(p1, p2, p3);                                                              \
   }
@@ -684,7 +693,7 @@ HOOK_EXPORT __eglMustCastToProperFunctionPointerType EGLAPIENTRY eglGetProcAddre
   {                                                                                       \
     EnsureRealLibraryLoaded();                                                            \
     CONCAT(function, _hooktype)                                                           \
-    real = (CONCAT(function, _hooktype))Process::GetFunctionAddress(eglhook.handle,       \
+    real = (CONCAT(function, _hooktype))getFunctionAddress(eglhook.handle,       \
                                                                     STRINGIZE(function)); \
     return real(p1, p2, p3, p4);                                                          \
   }
@@ -695,7 +704,7 @@ HOOK_EXPORT __eglMustCastToProperFunctionPointerType EGLAPIENTRY eglGetProcAddre
   {                                                                                       \
     EnsureRealLibraryLoaded();                                                            \
     CONCAT(function, _hooktype)                                                           \
-    real = (CONCAT(function, _hooktype))Process::GetFunctionAddress(eglhook.handle,       \
+    real = (CONCAT(function, _hooktype))getFunctionAddress(eglhook.handle,       \
                                                                     STRINGIZE(function)); \
     return real(p1, p2, p3, p4, p5);                                                      \
   }
@@ -779,9 +788,9 @@ static void EGLHooked(void *handle)
   RDCASSERT(!RenderDoc::Inst().IsReplayApp());
 
 // fetch non-hooked functions into our dispatch table
-#define EGL_FETCH(func, isext)                                                                  \
-  EGL.func = (CONCAT(PFN_egl, func))Process::GetFunctionAddress(handle, "egl" STRINGIZE(func)); \
-  if(!EGL.func && CheckConstParam(isext))                                                       \
+#define EGL_FETCH(func, isext)                                                         \
+  EGL.func = (CONCAT(PFN_egl, func))getFunctionAddress(handle, "egl" STRINGIZE(func)); \
+  if(!EGL.func && CheckConstParam(isext))                                              \
     EGL.func = (CONCAT(PFN_egl, func))EGL.GetProcAddress("egl" STRINGIZE(func));
   EGL_NONHOOKED_SYMBOLS(EGL_FETCH)
 #undef EGL_FETCH
@@ -862,4 +871,50 @@ void EGLHook::RegisterHooks()
                                        (void *)&CONCAT(egl, CONCAT(func, _renderdoc_hooked))));
   EGL_HOOKED_SYMBOLS(EGL_REGISTER)
 #undef EGL_REGISTER
+}
+
+static void *getNextGlesProcAddress(void *module, const char *func)
+{
+  return getNextLayerProcAddress(layerId, func);
+}
+
+void InitializeLayer(void *layer_id, FUNCTIONPOINTER get_next_layer_proc_address)
+{
+  RDCLOG("InitializeLayer(%p, %p)", layer_id, get_next_layer_proc_address);
+  layerId = layer_id;
+  getNextLayerProcAddress = get_next_layer_proc_address;
+  useGlesLayer = true;
+  getFunctionAddress = getNextGlesProcAddress;
+}
+
+void *GetLayerProcAddress(const char *func, void *next)
+{
+  RDCLOG("GetLayerProcAddress(%s, %p)", func, next);
+
+  // if the real context doesn't support this function, return NULL
+  if(next == NULL)
+    return next;
+
+  // return our egl hooks
+  if(!strcmp(func, "eglCreateContext"))
+    return (void *)&eglCreateContext_renderdoc_hooked;
+  if(!strcmp(func, "eglGetDisplay"))
+    return (void *)&eglGetDisplay_renderdoc_hooked;
+  if(!strcmp(func, "eglDestroyContext"))
+    return (void *)&eglDestroyContext_renderdoc_hooked;
+  if(!strcmp(func, "eglMakeCurrent"))
+    return (void *)&eglMakeCurrent_renderdoc_hooked;
+  if(!strcmp(func, "eglSwapBuffers"))
+    return (void *)&eglSwapBuffers_renderdoc_hooked;
+  if(!strcmp(func, "eglPostSubBufferNV"))
+    return (void *)&eglPostSubBufferNV_renderdoc_hooked;
+  if(!strcmp(func, "eglGetProcAddress"))
+    return (void *)&eglGetProcAddress_renderdoc_hooked;
+
+  // any other egl functions are safe to pass through unchanged
+  if(!strncmp(func, "egl", 3))
+    return next;
+
+  // otherwise, consult our database of hooks
+  return (void *)HookedGetProcAddress(func, next);
 }

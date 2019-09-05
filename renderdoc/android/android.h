@@ -42,6 +42,8 @@ Process::ProcessResult adbExecCommand(const std::string &deviceID, const std::st
 void initAdb();
 void shutdownAdb();
 bool InjectWithJDWP(const std::string &deviceID, uint16_t jdwpport);
+void setupGpuSettings(const std::string &deviceID, const std::string &packageName);
+void removeGpuSettins(const std::string &deviceID);
 
 struct LogcatThread
 {

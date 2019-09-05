@@ -212,6 +212,12 @@ ExecuteResult StartAndroidPackageForCapture(const char *host, const char *packag
   adbExecCommand(deviceID, StringFormat::Fmt("shell setprop debug.rdoc.RENDERDOC_CAPOPTS %s",
                                              opts.EncodeAsString().c_str()));
 
+  bool canUseGlesLayers = Android::getAndroidApiLevel(deviceID) >= 29;    // Android Q or higher
+  if(canUseGlesLayers)
+  {
+    setupGpuSettings(deviceID, packageName);
+  }
+
   std::string installedPath = GetPathForPackage(deviceID, packageName);
 
   std::string RDCLib = trim(
@@ -246,7 +252,7 @@ ExecuteResult StartAndroidPackageForCapture(const char *host, const char *packag
 
   RDCLOG("Launching package '%s' with activity '%s'", packageName.c_str(), activityName.c_str());
 
-  if(injectLibraries)
+  if(injectLibraries && !canUseGlesLayers)
   {
     RDCLOG("Setting up to launch the application as a debugger to inject.");
 
@@ -327,6 +333,25 @@ ExecuteResult StartAndroidPackageForCapture(const char *host, const char *packag
   // later use vulkan.
 
   return ret;
+}
+
+void setupGpuSettings(const std::string &deviceID, const std::string &packageName)
+{
+  std::vector<Android::ABI> abis = Android::GetSupportedABIs(deviceID);
+  std::string renderDocPackage = GetRenderDocPackageForABI(abis.back());
+  adbExecCommand(deviceID, "shell settings put global enable_gpu_debug_layers 1");
+  adbExecCommand(deviceID, "shell settings put global gpu_debug_app " + packageName);
+  adbExecCommand(deviceID, "shell settings put global gpu_debug_layer_app " + renderDocPackage);
+  adbExecCommand(deviceID,
+                 "shell settings put global gpu_debug_layers_gles " RENDERDOC_ANDROID_LIBRARY);
+}
+
+void removeGpuSettins(const std::string &deviceID)
+{
+  adbExecCommand(deviceID, "shell settings delete global enable_gpu_debug_layers");
+  adbExecCommand(deviceID, "shell settings delete global gpu_debug_app");
+  adbExecCommand(deviceID, "shell settings delete global gpu_debug_layer_app");
+  adbExecCommand(deviceID, "shell settings delete global gpu_debug_layers_gles");
 }
 
 bool CheckAndroidServerVersion(const std::string &deviceID, ABI abi)
@@ -553,6 +578,7 @@ bool RemoveRenderDocAndroidServer(const std::string &deviceID)
 void ResetCaptureSettings(const std::string &deviceID)
 {
   Android::adbExecCommand(deviceID, "shell setprop debug.vulkan.layers :", ".", true);
+  removeGpuSettins(deviceID);
 }
 };    // namespace Android
 
