@@ -191,7 +191,8 @@ HOOK_EXPORT EGLContext EGLAPIENTRY eglCreateContext_renderdoc_hooked(EGLDisplay 
 
   EnsureRealLibraryLoaded();
 
-  LibraryHooks::Refresh();
+  if(!useGlesLayer)
+    LibraryHooks::Refresh();
 
   std::vector<EGLint> attribs;
 
@@ -878,16 +879,21 @@ static void *getNextGlesProcAddress(void *module, const char *func)
   return getNextLayerProcAddress(layerId, func);
 }
 
-void InitializeLayer(void *layer_id, FUNCTIONPOINTER get_next_layer_proc_address)
+HOOK_EXPORT void AndroidGLESLayer_Initialize(void *layer_id, FUNCTIONPOINTER get_next_layer_proc_address)
 {
   RDCLOG("InitializeLayer(%p, %p)", layer_id, get_next_layer_proc_address);
   layerId = layer_id;
   getNextLayerProcAddress = get_next_layer_proc_address;
   useGlesLayer = true;
   getFunctionAddress = getNextGlesProcAddress;
+#define EGL_FETCH(func, isext)                                                      \
+  EGL.func = (CONCAT(PFN_egl, func))getFunctionAddress(NULL, "egl" STRINGIZE(func));
+  EGL_HOOKED_SYMBOLS(EGL_FETCH)
+  EGL_NONHOOKED_SYMBOLS(EGL_FETCH)
+#undef EGL_FETCH
 }
 
-void *GetLayerProcAddress(const char *func, void *next)
+HOOK_EXPORT void *AndroidGLESLayer_GetProcAddress(const char *func, void *next)
 {
   RDCLOG("GetLayerProcAddress(%s, %p)", func, next);
 

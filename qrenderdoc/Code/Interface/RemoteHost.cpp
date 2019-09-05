@@ -113,7 +113,7 @@ ReplayStatus RemoteHost::Launch()
 
   if(IsADB())
   {
-   // status = RENDERDOC_StartAndroidRemoteServer(hostname.c_str());
+    status = RENDERDOC_StartAndroidRemoteServer(hostname.c_str());
     QThread::msleep(WAIT_TIME);
     return status;
   }
