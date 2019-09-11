@@ -212,7 +212,7 @@ ExecuteResult StartAndroidPackageForCapture(const char *host, const char *packag
   adbExecCommand(deviceID, StringFormat::Fmt("shell setprop debug.rdoc.RENDERDOC_CAPOPTS %s",
                                              opts.EncodeAsString().c_str()));
 
-  bool canUseGlesLayers = Android::getAndroidApiLevel(deviceID) >= 29;    // Android Q or higher
+  bool canUseGlesLayers = Android::CanUseGlesLayers(deviceID);
   if(canUseGlesLayers)
   {
     setupGpuSettings(deviceID, packageName);
@@ -335,6 +335,17 @@ ExecuteResult StartAndroidPackageForCapture(const char *host, const char *packag
   return ret;
 }
 
+bool CanUseGlesLayers(const std::string &deviceID)
+{
+   return Android::getAndroidApiLevel(deviceID) >= 29; // Android 10+
+}
+
+bool IsGlesLayersEnabled()
+{
+   const char *env = Process::GetEnvVariable("RENDERDOC_USE_GLES_LAYERS");
+   return env && env[0] == '1';
+}
+
 void setupGpuSettings(const std::string &deviceID, const std::string &packageName)
 {
   std::vector<Android::ABI> abis = Android::GetSupportedABIs(deviceID);
@@ -344,14 +355,8 @@ void setupGpuSettings(const std::string &deviceID, const std::string &packageNam
   adbExecCommand(deviceID, "shell settings put global gpu_debug_layer_app " + renderDocPackage);
   adbExecCommand(deviceID,
                  "shell settings put global gpu_debug_layers_gles " RENDERDOC_ANDROID_LIBRARY);
-}
-
-void removeGpuSettins(const std::string &deviceID)
-{
-  adbExecCommand(deviceID, "shell settings delete global enable_gpu_debug_layers");
-  adbExecCommand(deviceID, "shell settings delete global gpu_debug_app");
-  adbExecCommand(deviceID, "shell settings delete global gpu_debug_layer_app");
-  adbExecCommand(deviceID, "shell settings delete global gpu_debug_layers_gles");
+  bool canUseGlesLayers = Android::CanUseGlesLayers(deviceID);
+  adbExecCommand(deviceID,  StringFormat::Fmt("shell setprop debug.rdoc.RENDERDOC_USE_GLES_LAYERS %s", (canUseGlesLayers? "1" : "0")));
 }
 
 bool CheckAndroidServerVersion(const std::string &deviceID, ABI abi)
@@ -578,7 +583,10 @@ bool RemoveRenderDocAndroidServer(const std::string &deviceID)
 void ResetCaptureSettings(const std::string &deviceID)
 {
   Android::adbExecCommand(deviceID, "shell setprop debug.vulkan.layers :", ".", true);
-  removeGpuSettins(deviceID);
+  Android::adbExecCommand(deviceID, "shell settings delete global enable_gpu_debug_layers", ".", true);
+  Android::adbExecCommand(deviceID, "shell settings delete global gpu_debug_app", ".", true);
+  Android::adbExecCommand(deviceID, "shell settings delete global gpu_debug_layer_app", ".", true);
+  Android::adbExecCommand(deviceID, "shell settings delete global gpu_debug_layers_gles", ".", true);
 }
 };    // namespace Android
 

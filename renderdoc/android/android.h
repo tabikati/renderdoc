@@ -42,8 +42,9 @@ Process::ProcessResult adbExecCommand(const std::string &deviceID, const std::st
 void initAdb();
 void shutdownAdb();
 bool InjectWithJDWP(const std::string &deviceID, uint16_t jdwpport);
+bool CanUseGlesLayers(const std::string &deviceID);
+bool IsGlesLayersEnabled();
 void setupGpuSettings(const std::string &deviceID, const std::string &packageName);
-void removeGpuSettins(const std::string &deviceID);
 
 struct LogcatThread
 {

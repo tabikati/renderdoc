@@ -33,6 +33,10 @@
 #include <dlfcn.h>
 #endif
 
+#if ENABLED(RDOC_ANDROID)
+#include "android/android.h"
+#endif
+
 // don't want these definitions, the only place we'll use these is as parameter/variable names
 #ifdef near
 #undef near
@@ -242,6 +246,11 @@ static void GLHooked(void *handle)
 
 void GLHook::RegisterHooks()
 {
+#if ENABLED(RDOC_ANDROID)
+  if(Android::IsGlesLayersEnabled())
+    return;
+#endif
+
   RDCLOG("Registering OpenGL hooks");
 
 // pick the 'primary' library we consider GL functions to come from. This is mostly important on
