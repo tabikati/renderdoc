@@ -62,6 +62,7 @@ void GLReplay::Shutdown()
 {
   SAFE_DELETE(m_pAMDCounters);
   SAFE_DELETE(m_pIntelCounters);
+  SAFE_DELETE(m_pArmGlCounters);
 
   DeleteDebugData();
 
@@ -341,6 +342,17 @@ void GLReplay::SetReplayData(GLWindowingData data)
     {
       delete countersIntel;
       m_pIntelCounters = NULL;
+    }
+
+    ArmGlCounters *armGlCounters = new ArmGlCounters();
+    if(armGlCounters && armGlCounters->Init())
+    {
+      m_pArmGlCounters = armGlCounters;
+    }
+    else
+    {
+      delete armGlCounters;
+      m_pArmGlCounters = NULL;
     }
   }
 }

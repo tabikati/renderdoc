@@ -67,6 +67,12 @@ std::vector<GPUCounter> GLReplay::EnumerateCounters()
     ret.insert(ret.end(), intelCounters.begin(), intelCounters.end());
   }
 
+  if(m_pArmGlCounters)
+  {
+    std::vector<GPUCounter> armCounters = m_pArmGlCounters->GetPublicCounterIds();
+    ret.insert(ret.end(), armCounters.begin(), armCounters.end());
+  }
+
   return ret;
 }
 
@@ -96,6 +102,11 @@ CounterDescription GLReplay::DescribeCounter(GPUCounter counterID)
 
       return desc;
     }
+  }
+
+  if(IsArmCounter(counterID) && m_pArmGlCounters)
+  {
+    return m_pArmGlCounters->GetCounterDescription(counterID);
   }
 
   // FFBA5548-FBF8-405D-BA18-F0329DA370A0
@@ -463,6 +474,55 @@ std::vector<CounterResult> GLReplay::FetchCountersIntel(const std::vector<GPUCou
   return ret;
 }
 
+void GLReplay::FillTimersArm(uint32_t *eventStartID, uint32_t *sampleIndex,
+                             std::vector<uint32_t> *eventIDs, const DrawcallDescription &drawnode)
+{
+  if(drawnode.children.empty())
+    return;
+
+  for(size_t i = 0; i < drawnode.children.size(); i++)
+  {
+    const DrawcallDescription &d = drawnode.children[i];
+
+    FillTimersArm(eventStartID, sampleIndex, eventIDs, drawnode.children[i]);
+
+    if(d.events.empty())
+      continue;
+
+    eventIDs->push_back(d.eventId);
+
+    m_pDriver->ReplayLog(*eventStartID, d.eventId, eReplay_WithoutDraw);
+
+    m_pArmGlCounters->BeginSample(d.eventId);
+
+    m_pDriver->ReplayLog(*eventStartID, d.eventId, eReplay_OnlyDraw);
+
+    m_pArmGlCounters->EndSample();
+
+    *eventStartID = d.eventId + 1;
+    ++*sampleIndex;
+  }
+}
+
+std::vector<CounterResult> GLReplay::FetchCountersArm(const std::vector<GPUCounter> &counters)
+{
+  m_pArmGlCounters->EnableCounters(counters);
+
+  m_pDriver->ReplayMarkers(false);
+
+  std::vector<uint32_t> eventIDs;
+
+  uint32_t eventStartID = 0;
+
+  uint32_t sampleIndex = 0;
+
+  FillTimersArm(&eventStartID, &sampleIndex, &eventIDs, m_pDriver->GetRootDraw());
+
+  std::vector<CounterResult> ret = m_pArmGlCounters->GetCounterData(eventIDs, counters);
+
+  return ret;
+}
+
 std::vector<CounterResult> GLReplay::FetchCounters(const std::vector<GPUCounter> &allCounters)
 {
   std::vector<CounterResult> ret;
@@ -503,6 +563,16 @@ std::vector<CounterResult> GLReplay::FetchCounters(const std::vector<GPUCounter>
     {
       ret = FetchCountersIntel(intelCounters);
     }
+  }
+
+  if(m_pArmGlCounters)
+  {
+    std::vector<GPUCounter> armCounters;
+    std::copy_if(allCounters.begin(), allCounters.end(), std::back_inserter(armCounters),
+                 [](const GPUCounter &c) { return IsArmCounter(c); });
+
+    if(!armCounters.empty())
+      ret = FetchCountersArm(armCounters);
   }
 
   if(counters.empty())

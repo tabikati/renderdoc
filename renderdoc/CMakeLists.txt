@@ -486,6 +486,8 @@ list(APPEND renderdoc_objects $<TARGET_OBJECTS:rdoc_amd>)
 if(ENABLE_GL OR ENABLE_GLES)
     add_subdirectory(driver/ihv/intel)
     list(APPEND renderdoc_objects $<TARGET_OBJECTS:rdoc_intel>)
+    add_subdirectory(driver/ihv/arm)
+    list(APPEND renderdoc_objects $<TARGET_OBJECTS:rdoc_arm>)
 endif()
 
 add_library(rdoc OBJECT ${sources})

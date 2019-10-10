@@ -50,6 +50,7 @@ enum class CounterFamily
   AMD,
   Intel,
   NVIDIA,
+  Arm,
 };
 
 CounterFamily GetCounterFamily(GPUCounter counter)
@@ -66,6 +67,10 @@ CounterFamily GetCounterFamily(GPUCounter counter)
   {
     return CounterFamily::NVIDIA;
   }
+  else if(IsArmCounter(counter))
+  {
+    return CounterFamily::Arm;
+  }
 
   return CounterFamily::Generic;
 }
@@ -78,6 +83,7 @@ QString ToString(CounterFamily family)
     case CounterFamily::Generic: return lit("Generic");
     case CounterFamily::Intel: return lit("Intel");
     case CounterFamily::NVIDIA: return lit("NVIDIA");
+    case CounterFamily::Arm: return lit("Arm");
     case CounterFamily::Unknown: return lit("Unknown");
   }
 

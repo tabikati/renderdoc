@@ -27,6 +27,7 @@
 
 #include "api/replay/renderdoc_replay.h"
 #include "core/core.h"
+#include "driver/ihv/arm/arm_gl_counters.h"
 #include "replay/replay_driver.h"
 #include "gl_common.h"
 
@@ -466,4 +467,12 @@ private:
                        std::vector<uint32_t> *eventIDs, const DrawcallDescription &drawnode);
 
   std::vector<CounterResult> FetchCountersIntel(const std::vector<GPUCounter> &counters);
+
+  // Arm counter instance
+  ArmGlCounters *m_pArmGlCounters = NULL;
+
+  void FillTimersArm(uint32_t *eventStartID, uint32_t *sampleIndex, std::vector<uint32_t> *eventIDs,
+                     const DrawcallDescription &drawnode);
+
+  std::vector<CounterResult> FetchCountersArm(const std::vector<GPUCounter> &counters);
 };

@@ -3040,7 +3040,10 @@ enum class GPUCounter : uint32_t
   FirstNvidia = 3000000,
   LastIntel = FirstNvidia - 1,
 
-  LastNvidia = 4000000,
+  FirstArm = 4000000,
+  LastNvidia = FirstArm - 1,
+
+  LastArm = 5000000,
 };
 
 ITERABLE_OPERATORS(GPUCounter);
@@ -3088,6 +3091,17 @@ DOCUMENT(R"(Check whether or not this is an Nvidia private counter.
 inline constexpr bool IsNvidiaCounter(GPUCounter c)
 {
   return c >= GPUCounter::FirstNvidia && c <= GPUCounter::LastNvidia;
+}
+
+DOCUMENT(R"(Check whether or not this is an Arm private counter.
+
+:param GPUCounter c: The counter.
+:return: ``True`` if it is an Arm private counter, ``False`` if it's not.
+:rtype: ``bool``
+)");
+inline constexpr bool IsArmCounter(GPUCounter c)
+{
+  return c >= GPUCounter::FirstArm && c <= GPUCounter::LastArm;
 }
 
 DOCUMENT(R"(The unit that GPU counter data is returned in.

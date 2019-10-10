@@ -878,6 +878,9 @@ struct AndroidController : public IDeviceProtocolHandler
       // 32-bit remote server.
       Android::adbExecCommand(deviceID, "shell am start -n " + GetRenderDocPackageForABI(abis.back()) +
                                             "/.Loader -e renderdoccmd remoteserver");
+
+      Android::adbExecCommand(deviceID, "forward tcp:8080 tcp:8080");
+      Android::adbExecCommand(deviceID, "shell setprop security.perf_harden 0");
     });
 
     // allow the package to start and begin listening before we return
